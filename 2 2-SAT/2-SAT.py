@@ -1,33 +1,10 @@
 import sys
 import time
-from ... import cnf_utils
+import cnf_utils
 
 statUP = 0
 statDecisions = 0
 statTimeStart = time.time()
-
-# parse cnf file to list of clauses
-def read_cnf(filename: str) -> list[list[int]]:
-    cnf: list[list[int]] = []
-    header = None
-    with open(filename, "r") as f:
-        lines = f.readlines()
-        for line in lines:
-            # ignore comments and header
-            if line.startswith("c"):
-                continue
-            if line.startswith("p"):
-                header = line.strip()
-                continue
-            clause: list[int] = []
-            literals = line.split()
-            for literal in literals:
-                literal = int(literal)
-                if literal == 0:
-                    break
-                clause.append(literal)
-            cnf.append(clause)
-    return (cnf, header)
 
 # unit propagation
 def unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
@@ -92,7 +69,7 @@ if len(sys.argv) != 2:
 
 filename = sys.argv[1]
 
-(cnf, header) = read_cnf(filename)
+cnf = cnf_utils.read_cnf(filename)
 (sat, v) = SAT_2((cnf, []))
 
 statTimeEnd = time.time()
@@ -112,49 +89,4 @@ if sat:
 
 # fancy output
 
-class bcolors:
-    lightBlue = '\033[96m'
-    purple = '\033[95m'
-    darkBlue = '\033[94m'
-    green = '\033[92m'
-    end = '\033[0m'
-    bold = '\033[1m'
-    underline = '\033[4m'
-    italic = '\033[3m'
-
-print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"banner"+bcolors.end+bcolors.lightBlue+" ] -------------------------------------------------------------" + bcolors.end)
-print("c")
-print("c", bcolors.purple+"2-SAT Solver"+bcolors.end)
-print("c", bcolors.purple+"Justus Dreßler"+bcolors.end)
-print("c", bcolors.purple+"created for FMI-IN0159 Algorithmisches Beweisen LAB"+bcolors.end)
-print("c")
-print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"parsing input"+bcolors.end+bcolors.lightBlue+" ] ------------------------------------------------------" + bcolors.end)
-print("c")
-print("c", "reading DIMACS file from '" + bcolors.green+filename+bcolors.end + "'")
-if header:
-    print("c", "found '" + bcolors.green+header+bcolors.end + "' header")
-print("c")
-print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"result"+bcolors.end+bcolors.lightBlue+" ] -------------------------------------------------------------" + bcolors.end)
-print("c")
-
-print("s","SATISFIABLE" if sat else "UNSATISFIABLE")
-
-if(sat):
-    vPrint = map(str, sorted(v, key=abs))
-    print("v", end=" ")
-    currentLineLength = 2
-    for vStr in vPrint:
-        if currentLineLength + len(vStr) > 78:
-            print()
-            print("v", end=" ")
-            currentLineLength = 2
-        print(vStr, end=" ")
-        currentLineLength += len(vStr) + 1
-    print()
-print("c")
-print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"statistics"+bcolors.end+bcolors.lightBlue+" ] ---------------------------------------------------------" + bcolors.end)
-print("c")
-print("c", "unit propagation:", statUP)
-print("c", "decisions:", statDecisions)
-print("c", "time:", statTimeEnd - statTimeStart, "s")
-print("c")
+cnf_utils.fancy_output("2-SAT Solver", sat, v, filename, [("unit propagation", str(statUP)), ("decisions", str(statDecisions)), ("time", str(statTimeEnd-statTimeStart)+" s")])
