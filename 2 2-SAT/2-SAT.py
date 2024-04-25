@@ -11,8 +11,7 @@ def unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[lis
     cnf = cnf_v[0]
     v = cnf_v[1]
     
-    global statUP
-    statUP += 1
+    
     i = 0
     while i < len(cnf):
         if len(cnf[i]) == 1:
@@ -25,6 +24,9 @@ def unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[lis
 
 # set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false
 def setVariable(cnf_v: tuple[list[list[int]], list[int]], variable: int) -> tuple[list[list[int]], list[int]]:
+    global statUP
+    statUP += 1
+    
     cnf = cnf_v[0]
     v = cnf_v[1]
     
@@ -89,4 +91,8 @@ if sat:
 
 # fancy output
 
-cnf_utils.fancy_output("2-SAT Solver", sat, v, filename, [("unit propagation", str(statUP)), ("decisions", str(statDecisions)), ("time", str(statTimeEnd-statTimeStart)+" s")])
+cnf_utils.fancy_output("2-SAT Solver", sat, v, filename, [
+    ("unit propagation", str(statUP)), 
+    ("decisions", str(statDecisions)), 
+    ("time", str(statTimeEnd-statTimeStart)+" s")
+    ])
