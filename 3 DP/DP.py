@@ -27,9 +27,10 @@ def subsumption(cnf: list[list[int]]) -> list[list[int]]:
 # remove tautologies and duplicates
 def remove_tautologies_and_duplicates(cnf: list[list[int]]) -> list[list[int]]:
     # remove tautologies
-    cnf = [c for c in cnf if not any([l == -l for l in c])]
+    cnf = [c for c in cnf if not any([l1 == -l2 for l1 in c for l2 in c])]
     # remove duplicates
-    cnf = [list(set(c)) for c in cnf]
+    cnf = sorted([sorted(c) for c in cnf])
+    cnf = [cnf[i] for i in range(len(cnf)) if i == len(cnf)-1 or cnf[i] != cnf[i+1]] # last one is always kept
     return cnf
 
 # remove variable if it exists in only 1 polarity
@@ -38,11 +39,11 @@ def pure_literal_elimination(cnf: list[list[int]]) -> list[list[int]]:
     
     # all literals in cnf
     literals = set([l for c in cnf for l in c]) 
+    statClausesBefore = len(cnf)
     for l in literals:
         if -l not in literals:
-            statClausesBefore = len(cnf)
             cnf = unit_propagation(cnf, l)
-            statPureLiteralRemovedClauses += statClausesBefore - len(cnf)
+    statPureLiteralRemovedClauses += statClausesBefore - len(cnf)
     return cnf
 
 # repeat unit propagation until no more unit clauses are found
@@ -76,8 +77,9 @@ def addResolvent(clause1: list[int], clause2: list[int], literal: int) -> list[l
 
 def DP(cnf: list[list[int]]) -> bool:
     while True:
-        last_cnf= cnf
-        while last_cnf == cnf:
+        lenCnf = -1
+        while lenCnf != len(cnf):
+            lenCnf = len(cnf)
             cnf = complete_unit_propagation(cnf)
             cnf = remove_tautologies_and_duplicates(cnf)
             cnf = pure_literal_elimination(cnf)
@@ -88,19 +90,23 @@ def DP(cnf: list[list[int]]) -> bool:
             return False
         # choose a variable
         literal = cnf[0][0]
-        new_cnf = cnf.copy()
+        new_clauses = []
 
         for i in range(len(cnf)):
             if literal in cnf[i]:
                 for j in range(i+1, len(cnf)):
                     if -literal in cnf[j]:
-                        new_cnf.append(addResolvent(cnf[i], cnf[j], literal))
+                        new_clauses.append(addResolvent(cnf[i], cnf[j], literal))
             if -literal in cnf[i]:
                 for j in range(i+1, len(cnf)):
                     if literal in cnf[j]:
-                        new_cnf.append(addResolvent(cnf[i], cnf[j], literal))
-        cnf = [c for c in new_cnf if literal not in c and -literal not in c]
-    
+                        new_clauses.append(addResolvent(cnf[i], cnf[j], literal))
+        cnf = new_clauses + [c for c in cnf if literal not in c and -literal not in c]
+# test unit propagation
+# cnf = []
+# cnf = sorted([sorted(c) for c in cnf])
+# cnf = [cnf[i] for i in range(len(cnf)) if i == len(cnf)-1 or cnf[i] != cnf[i+1]]
+# print(cnf)
 
 if len(sys.argv) != 2:
     print("Usage: python DP.py filename")
@@ -116,7 +122,7 @@ statTimeEnd = time.time()
 cnf_utils.fancy_output("DP Solver", sat, None, filename, [
     ("unit propagations", str(statUP)),
     ("added clauses", str(statAddedClauses)),
-    ("pure literal removed clauses", str(statPureLiteralRemovedClauses)),
+    ("pure literal eliminations", str(statPureLiteralRemovedClauses)),
     ("subsumed clauses", str(statSubsumedClauses)),
     ("time", str(statTimeEnd - statTimeStart)+" s")
 ])

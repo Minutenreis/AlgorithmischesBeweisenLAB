@@ -38,6 +38,7 @@ sat: is the formula satisfiable
 v: list of variable assignments (if not satisfiable, is ignored)
 filename: name of the DIMACS CNF file
 stats: list of statistics as tuple (name, value)
+THIS CLOSES THE PROGRAM WITH THE CORRECT EXIT CODE
 """
 def fancy_output(name: str, sat: bool, v: list[int],filename: str, stats: list[tuple[str,str]]) -> None:
     header = None 
@@ -82,5 +83,9 @@ def fancy_output(name: str, sat: bool, v: list[int],filename: str, stats: list[t
         print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"statistics"+bcolors.end+bcolors.lightBlue+" ] ---------------------------------------------------------" + bcolors.end)
         print("c")
         for stat in stats:
-            print("c", (stat[0]+":").ljust(20), stat[1])
+            print("c", (stat[0]+":").ljust(40), stat[1])
         print("c")
+    print("c", bcolors.lightBlue+"--- [ "+bcolors.end+bcolors.darkBlue+bcolors.bold+"shutting down"+bcolors.end+bcolors.lightBlue+" ] ------------------------------------------------------" + bcolors.end)
+    print("c")
+    print("c", "exit", 10 if sat else 20)
+    exit(10 if sat else 20)
