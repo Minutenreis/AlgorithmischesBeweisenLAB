@@ -6,8 +6,8 @@ statUP = 0
 statDecisions = 0
 statTimeStart = time.time()
 
-# unit propagation
-def unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
+# repeat unit propagation until no more unit clauses are found
+def repeated_unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
     cnf = cnf_v[0]
     v = cnf_v[1]
     
@@ -17,14 +17,14 @@ def unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[lis
     while i < len(cnf):
         if len(cnf[i]) == 1:
             literal = cnf[i][0]
-            (cnf, v) = setVariable((cnf, v), literal)
+            (cnf, v) = unit_propagation((cnf, v), literal)
             i = 0
             continue # skip increment
         i += 1
     return (cnf, v)
 
-# set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false
-def setVariable(cnf_v: tuple[list[list[int]], list[int]], variable: int) -> tuple[list[list[int]], list[int]]:
+# unit_propagation: set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false for all clauses
+def unit_propagation(cnf_v: tuple[list[list[int]], list[int]], variable: int) -> tuple[list[list[int]], list[int]]:
     cnf = cnf_v[0]
     v = cnf_v[1]
     
@@ -43,7 +43,7 @@ v: list of variable assignments
 """
 def SAT_2(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[bool, list[int]]:
     # unit propagation
-    cnf_v = unit_propagation(cnf_v)
+    cnf_v = repeated_unit_propagation(cnf_v)
     cnf = cnf_v[0]
     v = cnf_v[1]
     if len(cnf) == 0: # all clauses are satisfied
@@ -57,11 +57,11 @@ def SAT_2(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[bool, list[int]]:
     statDecisions += 1
     
     # try setting variable to False
-    resultSetFalse = SAT_2(setVariable(cnf_v, -literal))
+    resultSetFalse = SAT_2(unit_propagation(cnf_v, -literal))
     if resultSetFalse[0]:
         return resultSetFalse
     # try setting variable to True
-    return SAT_2(setVariable(cnf_v, literal))
+    return SAT_2(unit_propagation(cnf_v, literal))
 
 if len(sys.argv) != 2:
     print("Usage: python 2-SAT.py filename")
