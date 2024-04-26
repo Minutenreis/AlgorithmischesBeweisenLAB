@@ -20,9 +20,11 @@ def random_cnf(n, c, k):
                 if random.random() < 0.5: 
                     literal = -literal
                 clause.append(literal)
+                clause.sort(key=abs)
             if clause not in clauses:
                 break
         clauses.append(clause)
+    clauses.sort() # for easier visual comparison
     return clauses
 
 if len(sys.argv) != 4 and len(sys.argv) != 5:

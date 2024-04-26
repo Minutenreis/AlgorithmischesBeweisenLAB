@@ -65,7 +65,7 @@ def fancy_output(name: str, sat: bool, v: list[int],filename: str, stats: list[t
 
     print("s","SATISFIABLE" if sat else "UNSATISFIABLE")
 
-    if(sat):
+    if(sat and v):
         vPrint = map(str, sorted(v, key=abs))
         print("v", end=" ")
         currentLineLength = 2

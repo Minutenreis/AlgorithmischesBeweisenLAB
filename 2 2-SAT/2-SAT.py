@@ -7,7 +7,7 @@ statDecisions = 0
 statTimeStart = time.time()
 
 # repeat unit propagation until no more unit clauses are found
-def repeated_unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
+def complete_unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
     cnf = cnf_v[0]
     v = cnf_v[1]
     
@@ -45,7 +45,7 @@ v: list of variable assignments
 """
 def SAT_2(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[bool, list[int]]:
     # unit propagation
-    cnf_v = repeated_unit_propagation(cnf_v)
+    cnf_v = complete_unit_propagation(cnf_v)
     cnf = cnf_v[0]
     v = cnf_v[1]
     if len(cnf) == 0: # all clauses are satisfied
@@ -81,15 +81,6 @@ if sat:
     for clause in cnf:
         if not any([literal in v for literal in clause]):
             sys.exit("c", "Error: clause not satisfied")
-
-# output as required
-
-# print("s","SATISFIABLE" if sat else "UNSATISFIABLE")
-# print("v"," ".join(map(str, sorted(v, key=abs))))
-# print("c", "Unit Propagation:", statUP)
-# print("c", "Decisions:", statDecisions)
-
-# fancy output
 
 cnf_utils.fancy_output("2-SAT Solver", sat, v, filename, [
     ("unit propagation", str(statUP)), 
