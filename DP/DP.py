@@ -1,6 +1,7 @@
 import sys
 import time
 import cnf_utils
+import heapq
 
 statTimeStart = time.time()
 statUP = 0
@@ -29,7 +30,7 @@ def remove_tautologies_and_duplicates(cnf: list[list[int]]) -> list[list[int]]:
     # remove tautologies
     cnf = [c for c in cnf if not any([l1 == -l2 for l1 in c for l2 in c])]
     # remove duplicates
-    cnf = sorted([sorted(c) for c in cnf])
+    [c for c in cnf].sort()
     cnf = [cnf[i] for i in range(len(cnf)) if i == len(cnf)-1 or cnf[i] != cnf[i+1]] # last one is always kept
     return cnf
 
@@ -73,7 +74,8 @@ def unit_propagation(cnf: list[list[int]], variable: int) -> list[list[int]]:
 def addResolvent(clause1: list[int], clause2: list[int], literal: int) -> list[list[int]]:
     global statAddedClauses
     statAddedClauses += 1
-    return [l for l in clause1 + clause2 if l != literal and l != -literal]
+    iterator = heapq.merge(clause1, clause2, key=abs)
+    return [l for l in iterator if l != literal and l != -literal]
 
 def DP(cnf: list[list[int]]) -> bool:
     while True:
@@ -102,11 +104,6 @@ def DP(cnf: list[list[int]]) -> bool:
                     if literal in cnf[j]:
                         new_clauses.append(addResolvent(cnf[i], cnf[j], literal))
         cnf = new_clauses + [c for c in cnf if literal not in c and -literal not in c]
-# test unit propagation
-# cnf = []
-# cnf = sorted([sorted(c) for c in cnf])
-# cnf = [cnf[i] for i in range(len(cnf)) if i == len(cnf)-1 or cnf[i] != cnf[i+1]]
-# print(cnf)
 
 if len(sys.argv) != 2:
     print("Usage: python DP.py filename")

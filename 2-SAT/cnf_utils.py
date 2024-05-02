@@ -18,6 +18,7 @@ def read_cnf(filename: str) -> list[list[int]]:
                 if literal == 0:
                     break
                 clause.append(literal)
+            clause.sort(key=abs)
             cnf.append(clause)
     return cnf
 
@@ -38,6 +39,7 @@ sat: is the formula satisfiable
 v: list of variable assignments (if not satisfiable, is ignored)
 filename: name of the DIMACS CNF file
 stats: list of statistics as tuple (name, value)
+THIS CLOSES THE PROGRAM WITH THE CORRECT EXIT CODE
 """
 def fancy_output(name: str, sat: bool, v: list[int],filename: str, stats: list[tuple[str,str]]) -> None:
     header = None 

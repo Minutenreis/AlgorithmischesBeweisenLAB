@@ -18,6 +18,7 @@ def read_cnf(filename: str) -> list[list[int]]:
                 if literal == 0:
                     break
                 clause.append(literal)
+            clause.sort(key=abs)
             cnf.append(clause)
     return cnf
 
