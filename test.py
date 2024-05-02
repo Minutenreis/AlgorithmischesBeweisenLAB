@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import time
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
@@ -23,22 +24,33 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
-if len(sys.argv) != 6:
-    print("Usage: python test.py <solver> <n> <c> <k> <tries>")
+if len(sys.argv) != 4:
+    print("Usage: python test.py <solver> <n> <tries>")
     print("<solver>: path to the solver executable")
     sys.exit(1)
 
 solver = sys.argv[1]
 n = sys.argv[2]
-c = sys.argv[3]
-k = sys.argv[4]
-tries = int(sys.argv[5])
+tries = int(sys.argv[3])
+
+statTimeCadical = 0
+statTimeSolver = 0
+statTimeGen = 0
 
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
-    subprocess.call(["python3", "RandomCNF/randomCnf.py", n, c, k])
+    timeGenStart = time.time()
+    subprocess.call(["python3", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
+    timeCadicalStart = time.time()
     satCadical = subprocess.call(["./Submodules/cadical/build/cadical", "randomCnf.cnf"], stdout=subprocess.DEVNULL)
+    timeSolverStart = time.time()
     satSolver = subprocess.call(["python3",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+    timeSolverEnd = time.time()
+    
+    statTimeCadical += timeSolverStart - timeCadicalStart
+    statTimeSolver += timeSolverEnd - timeSolverStart
+    statTimeGen += timeCadicalStart - timeGenStart
+    
     if (satSolver != satCadical):
         print()
         print("Error: Solver output does not match Cadical output")
@@ -47,5 +59,8 @@ for i in range(tries):
         sys.exit(1)
     printProgressBar(i+1,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 print("All tests passed")
+print("Time spent in Cadical: ", statTimeCadical, "s")
+print("Time spent in Solver: ", statTimeSolver, "s")
+print("Time spent generating CNFs: ", statTimeGen, "s")
     
 
