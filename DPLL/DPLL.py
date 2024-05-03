@@ -4,7 +4,7 @@ import time
 import resource
 
 
-flagPureLiteralElimination = False
+flagPureLiteralElimination = True
 statTimeStart = time.time()
 statUP = 0
 statDecision = 0
@@ -123,12 +123,12 @@ cnf = cnf_utils.read_cnf(filename)
 sat, v = DPLL(cnf)
 
 statTimeEnd = time.time()
-statPeakMemoryMB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 
+statPeakMemoryMB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
 cnf_utils.fancy_output("DP Solver", sat, v, filename, [
     ("unit propagations", str(statUP)),
     ("decisions", str(statDecision)),
     ("pure literal removed variables", str(statPureLiteralRemovedVars)),
-    ("peak memory", str(statPeakMemoryMB),"MB (assumes Ubuntu 22.04)"),
+    ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
     ("time", str(statTimeEnd - statTimeStart)+" s")
 ])
