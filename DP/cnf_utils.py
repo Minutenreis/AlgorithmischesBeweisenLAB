@@ -39,7 +39,7 @@ sat: is the formula satisfiable
 v: list of variable assignments (if not satisfiable, is ignored)
 filename: name of the DIMACS CNF file
 stats: list of statistics as tuple (name, value)
-THIS CLOSES THE PROGRAM WITH THE CORRECT EXIT CODE
+THIS CLOSES THE PROGRAM WITH THE CORRECT EXIT CODE (10 for SAT, 20 for UNSAT)
 """
 def fancy_output(name: str, sat: bool, v: list[int],filename: str, stats: list[tuple[str,str]]) -> None:
     header = None 
