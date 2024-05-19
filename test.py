@@ -59,8 +59,12 @@ for i in range(tries):
     
     if (proof and satSolver == 20):
         timeDratStart = time.perf_counter()
-        subprocess.call(["./Submodules/drat-trim/drat-trim", "proof.drat", "randomCnf.cnf"], stdout=subprocess.DEVNULL)
+        correctDrat = subprocess.call(["./Submodules/drat-trim/drat-trim", "randomCnf.cnf", "proof.drat"],stdout=subprocess.DEVNULL)
         timeDratEnd = time.perf_counter()
+        if (correctDrat != 0):
+            print()
+            print(f"Error: {solver} did not produce a correct proof")
+            sys.exit(1)
         statTimeDrat += timeDratEnd - timeDratStart
     else:
         timeCadicalStart = time.perf_counter()
