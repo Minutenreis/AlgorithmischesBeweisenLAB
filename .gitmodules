@@ -1,3 +1,6 @@
 [submodule "Submodules/cadical"]
 	path = Submodules/cadical
 	url = https://github.com/arminbiere/cadical.git
+[submodule "Submodules/drat-trim"]
+	path = Submodules/drat-trim
+	url = https://github.com/marijnheule/drat-trim.git
