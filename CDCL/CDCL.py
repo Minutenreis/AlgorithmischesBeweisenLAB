@@ -14,15 +14,16 @@ def getAllLiterals(cnf: list[list[int]]) -> set[int]:
     return set([abs(l) for c in cnf for l in c])
 
 # todo: optimize this method 
-def decide(allLiterals: set[int], v: tuple[list[int], list[int]], decisionLevel: int) -> set[int]:
+def decide(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLevel: int) -> set[int]:
     global statDecision
     statDecision += 1
     
-    for literal in allLiterals:
-        if literal not in v[0] and -literal not in v[0]:
-            v[0].append(literal)
-            v[1].append(decisionLevel)
-            return v
+    for clause in cnf:
+        for literal in clause:
+            if literal not in v[0] and -literal not in v[0]:
+                v[0].append(literal)
+                v[1].append(decisionLevel)
+                return v
     raise Exception("All literals are assigned")
         
             
@@ -98,7 +99,7 @@ def CDCL(cnf: list[list[int]]) -> tuple[bool, list[int] | list[list[int]]] :
     v : tuple[list[int], list[int]] = ([],[])
     while len(v[0]) < len(allLiterals):
         decisionLevel += 1
-        v = decide(allLiterals, v, decisionLevel)
+        v = decide(cnf, v, decisionLevel)
         v, c_conflict = propagate(cnf, v, decisionLevel)
         while c_conflict is not None:
             if decisionLevel == 0:
