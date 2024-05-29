@@ -25,7 +25,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         print()
 
 if len(sys.argv) != 5:
-    print("Usage: python test.py <solver1> <solver2> <n> <tries>")
+    print("Usage: python benchmark.py <solver1> <solver2> <n> <tries>")
     print("<solver>: path to the solver executable")
     sys.exit(1)
 
