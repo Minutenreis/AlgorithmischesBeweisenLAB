@@ -8,6 +8,8 @@ statTimeStart = time.time()
 statUP = 0
 statDecision = 0
 statConflicts = 0
+statLearnedClauses = 0
+statMaxLengthLearnedClause = 0
 
 
 def getAllLiterals(cnf: list[list[int]]) -> set[int]:
@@ -105,6 +107,11 @@ def analyzeConflict(v: tuple[list[int], list[int]], c_conflict: list[list[int]],
             nextDecisionLevel = literal[1]
     
     learnedClause = [-UIP1] + [-literal[0] for literal in previousLevelLiterals]
+    
+    global statMaxLengthLearnedClause
+    global statLearnedClauses
+    statLearnedClauses += 1
+    statMaxLengthLearnedClause = max(statMaxLengthLearnedClause, len(learnedClause))
     return learnedClause, nextDecisionLevel
                
                 
@@ -164,6 +171,8 @@ cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
     ("unit propagations", str(statUP)),
     ("decisions", str(statDecision)),
     ("conflicts", str(statConflicts)),
+    ("learned clauses", str(statLearnedClauses)),
+    ("max learned clause length", str(statMaxLengthLearnedClause)),
     ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
     ("time", str(statTimeEnd - statTimeStart)+" s")
 ])
