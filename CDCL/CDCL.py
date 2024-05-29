@@ -144,9 +144,6 @@ def CDCL(cnf: list[list[int]]) -> tuple[bool, list[int] | list[list[int]]] :
         cnf,v,decisionLevel = applyRestartPolicy(cnf, v, decisionLevel, ogCnf)
     return True, v[0]
 
-# print(backtrack(([1,7,2,3,4], [1,1,2,2,2]), 1, [1,2]))
-# sys.exit()     
-
 if len(sys.argv) != 2:
     sys.exit("Usage: python CDCL.py filename")
 

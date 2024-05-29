@@ -87,14 +87,11 @@ def is_finished(cnf: list[list[int]], v: set[int]) -> bool:
     return 1 if satisfied else 0
 
 def DPLL(cnf: list[list[int]], v: set[int] = set()) -> tuple[bool,set[int]]:
-    print(v)
     oldLen = -1
     while oldLen != len(v):
         oldLen = len(v)
         pure_literal_elimination(cnf, v)
         complete_unit_propagation(cnf, v)
-    print(v)
-    print()
     
     finished = is_finished(cnf, v)
     if finished == 1:
