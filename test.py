@@ -80,13 +80,12 @@ for i in range(tries):
 
     statTimeSolver += timeSolverEnd - timeSolverStart
     statTimeGen += timeGenEnd - timeGenStart
-    
-    
     printProgressBar(i+1,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    
 print("All tests passed")
 print("Time spent in drat-trim: ", statTimeDrat, "s")
 print("Time spent in Cadical: ", statTimeCadical, "s")
-print("Time spent in Solver: ", statTimeSolver, "s")
+print(f"Time spent in {solver}: ", statTimeSolver, "s")
 print("Time spent generating CNFs: ", statTimeGen, "s")
     
 

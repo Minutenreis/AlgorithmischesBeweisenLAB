@@ -15,60 +15,79 @@ statMaxLengthLearnedClause = 0
 def getAllLiterals(cnf: list[list[int]]) -> set[int]:
     return set([abs(l) for c in cnf for l in c])
 
+def setLiteral(v: tuple[list[int], list[int], set[int]],literal: int, decisionLevel: int) -> tuple[list[int], list[int]]:
+    v[0].append(literal)
+    v[1].append(decisionLevel)
+    v[2].add(literal)
+    return v
+
 # todo: optimize this method 
-def decide(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLevel: int, decidedLiterals: list[int]) -> set[int]:
+def decide(cnf: list[list[int]], v: tuple[list[int], list[int], set[int]], decisionLevel: int) -> set[int]:
     global statDecision
     statDecision += 1
     
     for clause in cnf:
         for literal in clause:
-            if literal not in v[0] and -literal not in v[0]:
-                v[0].append(literal)
-                v[1].append(decisionLevel)
-                decidedLiterals.append(literal)
+            if literal not in v[2] and -literal not in v[2]:
+                setLiteral(v, literal, decisionLevel)
                 return v
     raise Exception("All literals are assigned")
         
             
 def propagate(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLevel: int) -> tuple[tuple[list[int], list[int]], list[list[int]]]:   
     global statUP
+    global statConflicts
     i = 0
     
     decidedClauses = []
     while i < len(cnf):
         clause = cnf[i]
-        unassignedLiteral = 0
-        numUnassigned = 0
-        for literal in clause:
-            # clause is satisfied
-            if literal in v[0]:
-                numUnassigned = -1
-                break
-            # variable is assigned
-            if -literal in v[0]:
-                continue
-            
-            unassignedLiteral = literal
-            numUnassigned += 1
-            
-        # clause is a unit clause -> assign the unassigned literal
-        if numUnassigned == 1:
-            v[0].append(unassignedLiteral)
-            v[1].append(decisionLevel)
-            decidedClauses.append(clause)
-            i = 0
-            statUP += 1
-            continue
-        # clause is unsatisfied
-        elif numUnassigned == 0:
-            global statConflicts
-            statConflicts += 1
-            return v, decidedClauses + [clause]
         
+        if len(clause) > 1:
+            # clause is satisfied
+            if clause[0] in v[2] or clause[1] in v[2]:
+                i += 1
+                continue
+            if -clause[0] in v[2]:
+                for i in range(1, len(clause)):
+                    if -clause[i] not in v[2]:
+                        clause[0], clause[i] = clause[i], clause[0]
+                        break
+                # no non negative literal found -> conflict
+                else: 
+                    statConflicts += 1
+                    return v, decidedClauses + [clause]
+            # new literal is true -> invariant fulfilled
+            if clause[0] in v[2]:
+                i += 1
+                continue
+            if -clause[1] in v[2]:
+                for i in range(2, len(clause)):
+                    if -clause[i] not in v[2]:
+                        clause[1], clause[i] = clause[i], clause[1]
+                        break
+                # only 1 non negative literal found -> unit propagation
+                else: 
+                    setLiteral(v, clause[0], decisionLevel)
+                    decidedClauses.append(clause)
+                    i = 0
+                    statUP += 1
+                    continue
+        # clause only contains one literal -> conflict if false, unit propagation if not yet true
+        else:
+            if -clause[0] in v[2]:
+                statConflicts += 1
+                return v, decidedClauses + [clause]
+            elif clause[0] not in v[2]:
+                setLiteral(v, clause[0], decisionLevel)
+                decidedClauses.append(clause)
+                i = 0
+                statUP += 1
+                continue
         i += 1
     return v, None
 
-def analyzeConflict(v: tuple[list[int], list[int]], c_conflict: list[list[int]], decisionLevel: int) -> tuple[list[int], int]:
+def analyzeConflict(v: tuple[list[int], list[int], set[int]], c_conflict: list[list[int]], decisionLevel: int) -> tuple[list[int], int]:
     previousLevelLiterals = set()
     currentLevelLiterals = set()
     
@@ -116,17 +135,19 @@ def analyzeConflict(v: tuple[list[int], list[int]], c_conflict: list[list[int]],
                
                 
 # todo implement
-def applyRestartPolicy(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLevel: int, ogCnf: list[list[int]]):
+def applyRestartPolicy(cnf: list[list[int]], v: tuple[list[int], list[int], set[int]], decisionLevel: int, ogCnf: list[list[int]]):
     return cnf, v, decisionLevel
 
-def backtrack(v : tuple[list[int], list[int]], new_decision_level: int, decidedLiterals: list[int]) -> tuple[tuple[list[int], list[int]],list[int]]:
+def backtrack(v : tuple[list[int], list[int], set[int]], new_decision_level: int) -> tuple[tuple[list[int], list[int]],list[int]]:
     if new_decision_level == 0:
-        return ([],[]), []
+        return [],[], set()
     
-    decidedLiterals = decidedLiterals[:new_decision_level]
     for i, literal in enumerate(v[1]):
+        # first found literal is decisionLiteral of that level
         if literal >= new_decision_level:
-            return (v[0][:i]+[decidedLiterals[-1]], v[1][:i]+[new_decision_level]), decidedLiterals
+            literalsToRemove = v[0][i+1:]
+            v[2].difference_update(literalsToRemove)
+            return v[0][:i+1], v[1][:i+1], v[2]
     else:
         raise Exception("No literal found to backtrack")
 
@@ -134,19 +155,18 @@ def backtrack(v : tuple[list[int], list[int]], new_decision_level: int, decidedL
 def CDCL(cnf: list[list[int]]) -> tuple[bool, list[int] | list[list[int]]] :
     ogCnf = deepcopy(cnf)
     decisionLevel = 0
-    decidedLiterals = []
     allLiterals = getAllLiterals(cnf)
-    v : tuple[list[int], list[int]] = ([],[])
+    v : tuple[list[int], list[int], set[int]] = ([],[],set())
     while len(v[0]) < len(allLiterals):
         decisionLevel += 1
-        v = decide(cnf, v, decisionLevel, decidedLiterals)
+        v = decide(cnf, v, decisionLevel)
         v, c_conflict = propagate(cnf, v, decisionLevel)
         while c_conflict is not None:
             if decisionLevel == 0:
                 return False, cnf[len(ogCnf):]
             c_learned, decisionLevel = analyzeConflict(v, c_conflict, decisionLevel)
             cnf.append(c_learned)
-            v, decidedLiterals = backtrack(v, decisionLevel, decidedLiterals)
+            v = backtrack(v, decisionLevel)
             v, c_conflict = propagate(cnf, v, decisionLevel)
         cnf,v,decisionLevel = applyRestartPolicy(cnf, v, decisionLevel, ogCnf)
     return True, v[0]
