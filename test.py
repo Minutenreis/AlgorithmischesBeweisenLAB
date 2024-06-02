@@ -31,9 +31,14 @@ if len(sys.argv) != 4:
 
 solver = sys.argv[1]
 proof = False
+python = True
 if (solver.upper() == "CDCL"):
     solver = "CDCL/CDCL.py"
     proof = True
+elif (solver.upper() == "CDCL-CPP"):
+    solver = "./CDCL/CDCL.cpp"
+    proof = True
+    python = False
 elif (solver.upper() == "DPLL"):
     solver = "DPLL/DPLL.py"
 elif (solver.upper() == "DP"):
@@ -54,7 +59,10 @@ for i in range(tries):
     timeGenEnd = time.perf_counter()
     
     timeSolverStart = time.perf_counter()
-    satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+    if (python):
+        satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+    else:
+        satSolver = subprocess.call(["sh", "CDCL/CDCL.sh"],stdout=subprocess.DEVNULL)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):
