@@ -36,7 +36,9 @@ if (solver.upper() == "CDCL"):
     solver = "CDCL/CDCL.py"
     proof = True
 elif (solver.upper() == "CDCL-CPP"):
-    solver = "./CDCL/CDCL.cpp"
+    solver = "CDCL/CDCL.cpp"
+    subprocess.call(["mkdir", "-p", "CDCL/bin"])
+    subprocess.call(["g++", "CDCL/CDCL.cpp","-std=c++20","-O3", "-o", "CDCL/bin/CDCL"])
     proof = True
     python = False
 elif (solver.upper() == "DPLL"):
@@ -62,7 +64,7 @@ for i in range(tries):
     if (python):
         satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
     else:
-        satSolver = subprocess.call(["sh", "CDCL/CDCL.sh"],stdout=subprocess.DEVNULL)
+        satSolver = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=subprocess.DEVNULL)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):

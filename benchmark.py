@@ -30,9 +30,16 @@ if len(sys.argv) != 5:
     print("<solver>: path to the solver executable")
     sys.exit(1)
 
-def getPath(solver):
+python = [True,True]
+
+def getPath(solver, num):
     if (solver.upper() == "CDCL"):
         return "CDCL/CDCL.py"
+    elif (solver.upper() == "CDCL-CPP"):
+        subprocess.call(["mkdir", "-p", "CDCL/bin"])
+        subprocess.call(["g++", "CDCL/CDCL.cpp","-std=c++20","-O3", "-o", "CDCL/bin/CDCL"])
+        python[num] = False
+        return "./CDCL/CDCL.cpp"
     elif (solver.upper() == "DPLL"):
         return "DPLL/DPLL.py"
     elif (solver.upper() == "DP"):
@@ -43,10 +50,10 @@ def getPath(solver):
 statisticsToCompare = ['unit propagations', 'decisions']
 
 solver1 = sys.argv[1]
-solver1Path = getPath(solver1)
+solver1Path = getPath(solver1,0)
     
 solver2 = sys.argv[2]
-solver2Path = getPath(solver2)
+solver2Path = getPath(solver2,1)
 
 n = sys.argv[3]
 tries = int(sys.argv[4])
@@ -69,11 +76,17 @@ for i in range(tries):
     timeGenEnd = time.perf_counter()
     
     timeSolver1Start = time.perf_counter()
-    satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
+    if (python[0]):
+        satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
+    else:
+        satSolver1 = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file1)
     timeSolver1End = time.perf_counter()
     
     timeSolver2Start = time.perf_counter()
-    satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
+    if (python[1]):
+        satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
+    else:
+        satSolver2 = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file2)
     timeSolver2End = time.perf_counter()
     
     if (satSolver1 != satSolver2):

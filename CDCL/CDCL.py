@@ -43,7 +43,7 @@ def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
     raise Exception("All literals are assigned")
         
             
-def propagate(cnf: CNF, v: V, decisionLevel: Level) -> V:   
+def propagate(cnf: CNF, v: V, decisionLevel: Level) -> tuple[V,Conflict]:   
     global statUP
     global statConflicts
     i = 0
@@ -57,6 +57,7 @@ def propagate(cnf: CNF, v: V, decisionLevel: Level) -> V:
             if clause[0] in v[2] or clause[1] in v[2]:
                 i += 1
                 continue
+            
             if -clause[0] in v[2]:
                 for j in range(1, len(clause)):
                     if -clause[j] not in v[2]:
@@ -84,10 +85,13 @@ def propagate(cnf: CNF, v: V, decisionLevel: Level) -> V:
                     continue
         # clause only contains one literal -> conflict if false, unit propagation if not yet true
         else:
-            if -clause[0] in v[2]:
+            if clause[0] in v[2]:
+                i += 1
+                continue
+            elif -clause[0] in v[2]:
                 statConflicts += 1
                 return v, decidedClauses + [clause]
-            elif clause[0] not in v[2]:
+            else:
                 setLiteral(v, clause[0], decisionLevel)
                 decidedClauses.append(clause)
                 i = 0
@@ -151,9 +155,9 @@ def backtrack(v : V, new_decision_level: Level) -> V:
     if new_decision_level == 0:
         return [],[], set()
     
-    for i, literal in enumerate(v[1]):
+    for i, level in enumerate(v[1]):
         # first found literal is decisionLiteral of that level
-        if literal >= new_decision_level:
+        if level >= new_decision_level:
             literalsToRemove = v[0][i+1:]
             v[2].difference_update(literalsToRemove)
             return v[0][:i+1], v[1][:i+1], v[2]
