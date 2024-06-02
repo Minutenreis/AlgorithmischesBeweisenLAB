@@ -50,11 +50,11 @@ statTimeDrat = 0
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
     timeGenStart = time.perf_counter()
-    subprocess.call(["python3", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
+    subprocess.call(["python3.12", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
     timeGenEnd = time.perf_counter()
     
     timeSolverStart = time.perf_counter()
-    satSolver = subprocess.call(["python3",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+    satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):

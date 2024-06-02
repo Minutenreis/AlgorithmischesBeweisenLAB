@@ -4,6 +4,16 @@ import cnf_utils
 import time
 import resource
 
+type Literal = int
+type Level = int
+type Set = set[Literal]
+type Clause = list[Literal]
+type CNF = list[Clause]
+type LevelList = list[Level]
+type LiteralList = list[Literal]
+type Conflict = list[Clause]
+type V = tuple[LiteralList, LevelList, Set]
+
 statTimeStart = time.time()
 statUP = 0
 statDecision = 0
@@ -12,29 +22,28 @@ statLearnedClauses = 0
 statMaxLengthLearnedClause = 0
 
 
-def getAllLiterals(cnf: list[list[int]]) -> set[int]:
-    return set([abs(l) for c in cnf for l in c])
+def getNumLiterals(cnf: CNF) -> int:
+    return len(set([abs(l) for c in cnf for l in c]))
 
-def setLiteral(v: tuple[list[int], list[int], set[int]],literal: int, decisionLevel: int) -> tuple[list[int], list[int]]:
+def setLiteral(v: V,literal: Literal, decisionLevel: Level) -> V:
     v[0].append(literal)
     v[1].append(decisionLevel)
     v[2].add(literal)
     return v
 
 # todo: optimize this method 
-def decide(cnf: list[list[int]], v: tuple[list[int], list[int], set[int]], decisionLevel: int) -> set[int]:
+def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
     global statDecision
     statDecision += 1
     
     for clause in cnf:
         for literal in clause:
             if literal not in v[2] and -literal not in v[2]:
-                setLiteral(v, literal, decisionLevel)
-                return v
+                return setLiteral(v, literal, decisionLevel)
     raise Exception("All literals are assigned")
         
             
-def propagate(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLevel: int) -> tuple[tuple[list[int], list[int]], list[list[int]]]:   
+def propagate(cnf: CNF, v: V, decisionLevel: Level) -> V:   
     global statUP
     global statConflicts
     i = 0
@@ -49,9 +58,9 @@ def propagate(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLeve
                 i += 1
                 continue
             if -clause[0] in v[2]:
-                for i in range(1, len(clause)):
-                    if -clause[i] not in v[2]:
-                        clause[0], clause[i] = clause[i], clause[0]
+                for j in range(1, len(clause)):
+                    if -clause[j] not in v[2]:
+                        clause[0], clause[j] = clause[j], clause[0]
                         break
                 # no non negative literal found -> conflict
                 else: 
@@ -62,9 +71,9 @@ def propagate(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLeve
                 i += 1
                 continue
             if -clause[1] in v[2]:
-                for i in range(2, len(clause)):
-                    if -clause[i] not in v[2]:
-                        clause[1], clause[i] = clause[i], clause[1]
+                for j in range(2, len(clause)):
+                    if -clause[j] not in v[2]:
+                        clause[1], clause[j] = clause[j], clause[1]
                         break
                 # only 1 non negative literal found -> unit propagation
                 else: 
@@ -87,7 +96,7 @@ def propagate(cnf: list[list[int]], v: tuple[list[int], list[int]], decisionLeve
         i += 1
     return v, None
 
-def analyzeConflict(v: tuple[list[int], list[int], set[int]], c_conflict: list[list[int]], decisionLevel: int) -> tuple[list[int], int]:
+def analyzeConflict(v: V, c_conflict: Conflict, decisionLevel: Level) -> tuple[Clause, Level]:
     previousLevelLiterals = set()
     currentLevelLiterals = set()
     
@@ -135,10 +144,10 @@ def analyzeConflict(v: tuple[list[int], list[int], set[int]], c_conflict: list[l
                
                 
 # todo implement
-def applyRestartPolicy(cnf: list[list[int]], v: tuple[list[int], list[int], set[int]], decisionLevel: int, ogCnf: list[list[int]]):
+def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level, ogCnf: CNF) -> tuple[CNF, V, Level]:
     return cnf, v, decisionLevel
 
-def backtrack(v : tuple[list[int], list[int], set[int]], new_decision_level: int) -> tuple[tuple[list[int], list[int]],list[int]]:
+def backtrack(v : V, new_decision_level: Level) -> V:
     if new_decision_level == 0:
         return [],[], set()
     
@@ -152,12 +161,12 @@ def backtrack(v : tuple[list[int], list[int], set[int]], new_decision_level: int
         raise Exception("No literal found to backtrack")
 
 # if sat, return True and v, else return False and list of added clauses
-def CDCL(cnf: list[list[int]]) -> tuple[bool, list[int] | list[list[int]]] :
+def CDCL(cnf: CNF) -> tuple[True, list[int]] | tuple[False,  list[Clause]] :
     ogCnf = deepcopy(cnf)
     decisionLevel = 0
-    allLiterals = getAllLiterals(cnf)
+    numLiterals = getNumLiterals(cnf)
     v : tuple[list[int], list[int], set[int]] = ([],[],set())
-    while len(v[0]) < len(allLiterals):
+    while len(v[0]) < numLiterals:
         decisionLevel += 1
         v = decide(cnf, v, decisionLevel)
         v, c_conflict = propagate(cnf, v, decisionLevel)

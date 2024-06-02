@@ -65,15 +65,15 @@ file2 = open(solver2Output, 'w')
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
     timeGenStart = time.perf_counter()
-    subprocess.call(["python3", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
+    subprocess.call(["python3.12", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
     timeGenEnd = time.perf_counter()
     
     timeSolver1Start = time.perf_counter()
-    satSolver1 = subprocess.call(["python3",solver1Path, "randomCnf.cnf"],stdout=file1)
+    satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
     timeSolver1End = time.perf_counter()
     
     timeSolver2Start = time.perf_counter()
-    satSolver2 = subprocess.call(["python3",solver2Path, "randomCnf.cnf"],stdout=file2)
+    satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
     timeSolver2End = time.perf_counter()
     
     if (satSolver1 != satSolver2):
