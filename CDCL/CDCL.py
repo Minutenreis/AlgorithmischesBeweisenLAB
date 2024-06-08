@@ -3,6 +3,8 @@ import sys
 import cnf_utils
 import time
 import resource
+import random
+import math
 
 type Literal = int
 type Level = int
@@ -22,10 +24,13 @@ statDecision = 0
 statConflicts = 0
 statLearnedClauses = 0
 statMaxLengthLearnedClause = 0
+statRestarts = 0
 
 b = 2
 c = 1.05
 k = 200
+numRandomDecision = 0
+oldStatConflicts = 0
 
 def isIn(literal: Literal, v: V) -> bool:
     info = v[2][abs(literal)-1]
@@ -41,10 +46,19 @@ def setLiteral(v: V,literal: Literal, decisionLevel: Level) -> V:
     v[2][abs(literal)-1][1] = literal
     return v
 
-# todo: optimize this method 
 def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
     global statDecision
     statDecision += 1
+    
+    global statConflicts
+    global numRandomDecision
+    global k
+    if numRandomDecision * k < statConflicts:
+        numRandomDecision += 1
+        # get random unset literal
+        allUnsetLiterals = [info[1] for info in v[2] if info[0] == False]
+        literal = random.choice(allUnsetLiterals)
+        return setLiteral(v,literal, decisionLevel)
     
     max = 0
     literal = 0
@@ -52,7 +66,7 @@ def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
         if not info[0] and info[2]>=max:
             max = info[2]
             literal = info[1]
-    
+            
     return setLiteral(v, literal, decisionLevel)
             
 def propagate(cnf: CNF, v: V, decisionLevel: Level) -> tuple[V,Conflict]:   
@@ -115,14 +129,17 @@ def propagate(cnf: CNF, v: V, decisionLevel: Level) -> tuple[V,Conflict]:
 def analyzeConflict(v: V, c_conflict: Conflict, decisionLevel: Level) -> tuple[Clause, Level]:
     previousLevelLiterals = set()
     currentLevelLiterals = set()
+    allLiteralsInConflict = set()
     
     index = -1
     for literal in c_conflict[index]:
         level = v[1][v[0].index(-literal)]
         if level == decisionLevel:
             currentLevelLiterals.add(-literal)
+            allLiteralsInConflict.add(-literal)
         else:
             previousLevelLiterals.add((-literal, level))
+            allLiteralsInConflict.add(-literal)
     
     while len(currentLevelLiterals) > 1:
         index -= 1    
@@ -140,15 +157,31 @@ def analyzeConflict(v: V, c_conflict: Conflict, decisionLevel: Level) -> tuple[C
             level = v[1][v[0].index(-literal)]
             if level == decisionLevel:
                 currentLevelLiterals.add(-literal)
+                allLiteralsInConflict.add(-literal)
             else:
                 previousLevelLiterals.add((-literal,level))
+                allLiteralsInConflict.add(-literal)
     
     UIP1 = currentLevelLiterals.pop()
     
+    # find next decision level
     nextDecisionLevel = 0
     for literal in previousLevelLiterals:
         if literal[1] > nextDecisionLevel:
             nextDecisionLevel = literal[1]
+            
+    # update VSIDS
+    global b
+    global c
+    for literal in allLiteralsInConflict:
+        v[2][abs(literal)-1][2] += b
+    b *= c
+    
+    # scale all numbers if b is too large
+    if b > 10**30:
+        for info in v[2]:
+            info[2] /= b
+        b = 1
     
     learnedClause = [-UIP1] + [-literal[0] for literal in previousLevelLiterals]
     
@@ -158,9 +191,29 @@ def analyzeConflict(v: V, c_conflict: Conflict, decisionLevel: Level) -> tuple[C
     statMaxLengthLearnedClause = max(statMaxLengthLearnedClause, len(learnedClause))
     return learnedClause, nextDecisionLevel
                
-                
-# todo implement
-def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level, ogCnf: CNF) -> tuple[CNF, V, Level]:
+def luby(i: int) -> int:
+    k = math.floor(math.log(i,2)) + 1
+    if i == 2**k-1:
+        return 2**(k-1)
+    return luby(i-2**(k-1)+1)
+
+# todo: wie ist nach i-ter neustart nach c*ti konflikten zu interpretieren? c*ti weiteren?
+def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level) -> tuple[CNF, V, Level]:
+    global statRestarts
+    global statConflicts
+    global c
+    global oldStatConflicts
+    
+    newConflicts = statConflicts - oldStatConflicts
+    
+    if newConflicts > c * luby(statRestarts+1):
+        statRestarts += 1
+        oldStatConflicts = statConflicts
+        for info in v[2]:
+            info[0] = False
+        v = ([],[],v[2])
+        decisionLevel = 0
+    
     return cnf, v, decisionLevel
 
 def backtrack(v : V, new_decision_level: Level) -> V:
@@ -197,7 +250,7 @@ def CDCL(cnf: CNF) -> tuple[True, list[int]] | tuple[False,  list[Clause]] :
             cnf.append(c_learned)
             v = backtrack(v, decisionLevel)
             v, c_conflict = propagate(cnf, v, decisionLevel)
-        cnf,v,decisionLevel = applyRestartPolicy(cnf, v, decisionLevel, ogCnf)
+        cnf,v,decisionLevel = applyRestartPolicy(cnf, v, decisionLevel)
     return True, v[0]
 
 if len(sys.argv) != 2:
@@ -222,6 +275,7 @@ cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
     ("conflicts", str(statConflicts)),
     ("learned clauses", str(statLearnedClauses)),
     ("max learned clause length", str(statMaxLengthLearnedClause)),
+    ("num Restarts", str(statRestarts)),
     ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
     ("time", str(statTimeEnd - statTimeStart)+" s")
 ])
