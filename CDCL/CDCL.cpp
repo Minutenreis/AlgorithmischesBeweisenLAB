@@ -20,7 +20,6 @@ using LevelList = std::vector<Level>;
 using LiteralList = std::vector<Literal>;
 using Conflict = std::vector<Clause>;
 using V = std::tuple<LiteralList, LevelList, LiteralInfoArray>;
-using namespace std;
 
 std::vector<Clause> NoConflict = std::vector<Clause>();
 
@@ -136,7 +135,7 @@ Conflict propagate(CNF &cnf, V &v, Level decisionLevel)
                 {
                     if (!isIn(-clause[j], v))
                     {
-                        swap(clause[0], clause[j]);
+                        std::swap(clause[0], clause[j]);
                         found = true;
                         break;
                     }
@@ -162,7 +161,7 @@ Conflict propagate(CNF &cnf, V &v, Level decisionLevel)
                 {
                     if (!isIn(-clause[j], v))
                     {
-                        swap(clause[1], clause[j]);
+                        std::swap(clause[1], clause[j]);
                         found = true;
                         break;
                     }
@@ -319,7 +318,7 @@ std::tuple<Clause, Level> analyzeConflict(V &v, Conflict const &c_conflict, Leve
     }
 
     statLearnedClauses++;
-    statMaxLengthLearnedClause = max(statMaxLengthLearnedClause, (int)learnedClause.size());
+    statMaxLengthLearnedClause = std::max(statMaxLengthLearnedClause, (int)learnedClause.size());
     return {learnedClause, nextDecisionLevel};
 }
 
@@ -486,14 +485,14 @@ int indexOf(Literal lit, LiteralList arr)
     return result;
 }
 
-std::tuple<CNF, string> readCnf(string filename)
+std::tuple<CNF, std::string> readCnf(std::string filename)
 {
-    string header = "";
+    std::string header = "";
     CNF cnf = CNF();
     Set vars = Set();
 
-    fstream cnfFile(filename);
-    string line;
+    std::fstream cnfFile(filename);
+    std::string line;
     while (getline(cnfFile, line))
     {
         if (line[0] == 'c')
@@ -505,12 +504,12 @@ std::tuple<CNF, string> readCnf(string filename)
             continue;
         }
         Clause clause = Clause();
-        string literal;
+        std::string literal;
         for (int i = 0; i < line.size(); i++)
         {
             if (line[i] == ' ')
             {
-                int lit = stoi(literal);
+                int lit = std::stoi(literal);
                 if (lit == 0)
                     break;
                 clause.push_back(lit);
@@ -550,7 +549,7 @@ int main(int argc, char const *argv[])
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    string filename = "../randomCnf.cnf";
+    std::string filename = "../randomCnf.cnf";
 
     if (argc == 2)
     {
@@ -562,7 +561,7 @@ int main(int argc, char const *argv[])
 
     if (!satisfiable)
     {
-        ofstream drat;
+        std::ofstream drat;
         drat.open("proof.drat");
         for (Clause const &clause : conflict)
         {
@@ -570,7 +569,7 @@ int main(int argc, char const *argv[])
             {
                 drat << literal << " ";
             }
-            drat << "0" << endl;
+            drat << "0" << std::endl;
         }
         drat.close();
     }
@@ -580,74 +579,74 @@ int main(int argc, char const *argv[])
     getrusage(RUSAGE_SELF, &usage);
     auto statPeakMemoryMB = usage.ru_maxrss / 1024;
 
-    vector<tuple<string, string>> stats = {
-        {"decisions", to_string(statDecisions)},
-        {"conflicts", to_string(statConflicts)},
-        {"unit propagations", to_string(statUP)},
-        {"learned clauses", to_string(statLearnedClauses)},
-        {"max length learned clause", to_string(statMaxLengthLearnedClause)},
-        {"numRestarts", to_string(statRestarts)},
-        {"peak memory usage (MB)", to_string(statPeakMemoryMB)},
-        {"runtime (ms)", to_string(std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count())}};
+    std::vector<std::tuple<std::string, std::string>> stats = {
+        {"decisions", std::to_string(statDecisions)},
+        {"conflicts", std::to_string(statConflicts)},
+        {"unit propagations", std::to_string(statUP)},
+        {"learned clauses", std::to_string(statLearnedClauses)},
+        {"max length learned clause", std::to_string(statMaxLengthLearnedClause)},
+        {"numRestarts", std::to_string(statRestarts)},
+        {"peak memory usage (MB)", std::to_string(statPeakMemoryMB)},
+        {"runtime (ms)", std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count())}};
 
-    for (tuple<string, string> stat : stats)
+    for (std::tuple<std::string, std::string> stat : stats)
     {
-        get<0>(stat) = get<0>(stat) + string(40 - get<0>(stat).length(), ' ');
+        get<0>(stat) = get<0>(stat) + std::string(40 - get<0>(stat).length(), ' ');
     }
 
-    string lightBlue = "\033[96m";
-    string purple = "\033[95m";
-    string darkBlue = "\033[94m";
-    string green = "\033[92m";
-    string end = "\033[0m";
-    string bold = "\033[1m";
-    string underline = "\033[4m";
-    string italic = "\033[3m";
+    std::string lightBlue = "\033[96m";
+    std::string purple = "\033[95m";
+    std::string darkBlue = "\033[94m";
+    std::string green = "\033[92m";
+    std::string end = "\033[0m";
+    std::string bold = "\033[1m";
+    std::string underline = "\033[4m";
+    std::string italic = "\033[3m";
 
-    cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "banner" << end << lightBlue << " ] -------------------------------------------------------------" << end << endl;
-    cout << "c " << endl;
-    cout << "c " << purple << "CDCL C++ Implementation" << end << endl;
-    cout << "c " << purple << "Justus Dreßler" << end << endl;
-    cout << "c " << purple << "created for FMI-IN0159 Algorithmisches Beweisen LAB" << end << endl;
-    cout << "c " << endl;
-    cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "parsing input" << end << lightBlue << " ] ------------------------------------------------------" << end << endl;
-    cout << "c " << endl;
-    cout << "c " << "reading DIMACS file from '" << green << filename << end << "'" << endl;
+    std::cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "banner" << end << lightBlue << " ] -------------------------------------------------------------" << end << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << purple << "CDCL C++ Implementation" << end << std::endl;
+    std::cout << "c " << purple << "Justus Dreßler" << end << std::endl;
+    std::cout << "c " << purple << "created for FMI-IN0159 Algorithmisches Beweisen LAB" << end << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "parsing input" << end << lightBlue << " ] ------------------------------------------------------" << end << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << "reading DIMACS file from '" << green << filename << end << "'" << std::endl;
     if (header != "")
-        cout << "c " << "found '" << green << header << end << "' header" << endl;
-    cout << "c " << endl;
-    cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "result" << end << lightBlue << " ] -------------------------------------------------------------" << end << endl;
-    cout << "c " << endl;
+        std::cout << "c " << "found '" << green << header << end << "' header" << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "result" << end << lightBlue << " ] -------------------------------------------------------------" << end << std::endl;
+    std::cout << "c " << std::endl;
 
-    cout << "s " << (satisfiable ? "SATISFIABLE" : "UNSATISFIABLE") << endl;
+    std::cout << "s " << (satisfiable ? "SATISFIABLE" : "UNSATISFIABLE") << std::endl;
 
     if (satisfiable and assignment.size() > 0)
     {
         sort(assignment.begin(), assignment.end(), [](int a, int b)
              { return abs(a) < abs(b); });
-        cout << "v ";
+        std::cout << "v ";
         int currentLineLength = 2;
         for (int const &literal : assignment)
         {
-            if (currentLineLength + to_string(literal).length() > 78)
+            if (currentLineLength + std::to_string(literal).length() > 78)
             {
-                cout << endl;
-                cout << "v ";
+                std::cout << std::endl;
+                std::cout << "v ";
                 currentLineLength = 2;
             }
-            cout << literal << " ";
-            currentLineLength += to_string(literal).length() + 1;
+            std::cout << literal << " ";
+            currentLineLength += std::to_string(literal).length() + 1;
         }
-        cout << endl;
+        std::cout << std::endl;
     }
-    cout << "c " << endl;
-    cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "statistics" << end << lightBlue << " ] ---------------------------------------------------------" << end << endl;
-    cout << "c " << endl;
-    for (tuple<string, string> const &stat : stats)
-        cout << "c " << get<0>(stat) << ":" << get<1>(stat) << endl;
-    cout << "c " << endl;
-    cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "shutting down" << end << lightBlue << " ] ------------------------------------------------------" << end << endl;
-    cout << "c " << endl;
-    cout << "c exit " << (satisfiable ? 10 : 20) << endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "statistics" << end << lightBlue << " ] ---------------------------------------------------------" << end << std::endl;
+    std::cout << "c " << std::endl;
+    for (std::tuple<std::string, std::string> const &stat : stats)
+        std::cout << "c " << get<0>(stat) << ":" << get<1>(stat) << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "shutting down" << end << lightBlue << " ] ------------------------------------------------------" << end << std::endl;
+    std::cout << "c " << std::endl;
+    std::cout << "c exit " << (satisfiable ? 10 : 20) << std::endl;
     return (satisfiable ? 10 : 20);
 }
