@@ -54,6 +54,9 @@ statTimeSolver = 0
 statTimeGen = 0
 statTimeDrat = 0
 
+solver1Output = 'temp/solverOutput.txt'
+file = open(solver1Output, 'w')
+
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
     timeGenStart = time.perf_counter()
@@ -62,9 +65,9 @@ for i in range(tries):
     
     timeSolverStart = time.perf_counter()
     if (python):
-        satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+        satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=file)
     else:
-        satSolver = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=subprocess.DEVNULL)
+        satSolver = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):

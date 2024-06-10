@@ -31,7 +31,7 @@ def read_cnf(filename: str) -> list[list[int]]:
             clause.sort(key=abs)
             cnf.append(clause)
     
-    # map all variables to continues list 1,2,...,n
+    # map all variables to continuous list 1,2,...,n
     existingVars = sorted(list(vars))
     
     for i, clause in enumerate(cnf):

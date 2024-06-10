@@ -29,6 +29,7 @@ statRestarts = 0
 b = 2
 c = 1.05
 k = 200
+c_luby = 100
 numRandomDecision = 0
 oldStatConflicts = 0
 
@@ -206,7 +207,7 @@ def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level) -> tuple[CNF, V, Le
     
     newConflicts = statConflicts - oldStatConflicts
     
-    if newConflicts > c * luby(statRestarts+1):
+    if newConflicts > c_luby * luby(statRestarts+1):
         statRestarts += 1
         oldStatConflicts = statConflicts
         for info in v[2]:
