@@ -38,18 +38,18 @@ int c_luby = 100;
 int numRandomDecision = 0;
 int oldStatConflicts = 0;
 
-bool isIn(Literal literal, V v)
+bool isIn(Literal literal, V const &v)
 {
-    Info info = get<2>(v)[abs(literal) - 1];
+    Info const &info = get<2>(v)[abs(literal) - 1];
     return get<0>(info) && get<1>(info) == literal;
 }
 
 int getNumLiterals(CNF &cnf)
 {
     Set literals = Set();
-    for (Clause clause : cnf)
+    for (Clause const &clause : cnf)
     {
-        for (Literal literal : clause)
+        for (Literal const &literal : clause)
         {
             literals.insert(abs(literal));
         }
@@ -57,13 +57,13 @@ int getNumLiterals(CNF &cnf)
     return literals.size();
 }
 
-V setLiteral(V &v, Literal literal, int decisionLevel)
+void setLiteral(V &v, Literal literal, int decisionLevel)
 {
     get<0>(v).push_back(literal);
     get<1>(v).push_back(decisionLevel);
     get<0>(get<2>(v)[abs(literal) - 1]) = true;
     get<1>(get<2>(v)[abs(literal) - 1]) = literal;
-    return v;
+    return;
 }
 
 size_t getRandomNumber(size_t start, size_t end)
@@ -73,10 +73,9 @@ size_t getRandomNumber(size_t start, size_t end)
     std::uniform_int_distribution<std::mt19937::result_type> dist(start, end); // distribution in range [start, end]
 
     return dist(rng);
-    // return start + rand() % (end - start + 1);
 }
 
-V decide(CNF &_cnf, V &v, int decisionLevel)
+void decide(CNF &_cnf, V &v, int decisionLevel)
 {
     statDecisions++;
     if (numRandomDecision * k < statConflicts)
@@ -84,7 +83,7 @@ V decide(CNF &_cnf, V &v, int decisionLevel)
         numRandomDecision++;
         // get random unset literal
         LiteralList allUnsetLiterals = LiteralList();
-        for (Info info : get<2>(v))
+        for (Info const &info : get<2>(v))
         {
             if (get<0>(info) == false)
             {
@@ -92,11 +91,12 @@ V decide(CNF &_cnf, V &v, int decisionLevel)
             }
         }
         Literal literal = allUnsetLiterals[getRandomNumber(0, allUnsetLiterals.size() - 1)];
-        return setLiteral(v, literal, decisionLevel);
+        setLiteral(v, literal, decisionLevel);
+        return;
     }
     double max = 0;
     int literal = 0;
-    for (Info info : get<2>(v))
+    for (Info const &info : get<2>(v))
     {
         if (!get<0>(info) && get<2>(info) >= max)
         {
@@ -104,10 +104,11 @@ V decide(CNF &_cnf, V &v, int decisionLevel)
             literal = get<1>(info);
         }
     }
-    return setLiteral(v, literal, decisionLevel);
+    setLiteral(v, literal, decisionLevel);
+    return;
 }
 
-std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
+Conflict propagate(CNF &cnf, V &v, Level decisionLevel)
 {
     int i = 0;
 
@@ -115,7 +116,7 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
 
     while (i < cnf.size())
     {
-        Clause clause = cnf[i];
+        Clause &clause = cnf[i];
 
         if (clause.size() > 1)
         {
@@ -136,7 +137,6 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
                     if (!isIn(-clause[j], v))
                     {
                         swap(clause[0], clause[j]);
-                        cnf[i] = clause;
                         found = true;
                         break;
                     }
@@ -146,7 +146,7 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
                 {
                     statConflicts++;
                     decidedClauses.push_back(clause);
-                    return {cnf, v, decidedClauses};
+                    return decidedClauses;
                 }
             }
             // new literal is true -> invariant fulfilled
@@ -163,7 +163,6 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
                     if (!isIn(-clause[j], v))
                     {
                         swap(clause[1], clause[j]);
-                        cnf[i] = clause;
                         found = true;
                         break;
                     }
@@ -171,7 +170,7 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
                 // only 1 non negative literal found -> unit propagation
                 if (!found) // ELSE
                 {
-                    v = setLiteral(v, clause[0], decisionLevel);
+                    setLiteral(v, clause[0], decisionLevel);
                     decidedClauses.push_back(clause);
                     i = 0;
                     statUP++;
@@ -191,11 +190,11 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
             {
                 statConflicts++;
                 decidedClauses.push_back(clause);
-                return {cnf, v, decidedClauses};
+                return decidedClauses;
             }
             else
             {
-                v = setLiteral(v, clause[0], decisionLevel);
+                setLiteral(v, clause[0], decisionLevel);
                 decidedClauses.push_back(clause);
                 i = 0;
                 statUP++;
@@ -204,7 +203,7 @@ std::tuple<CNF, V, Conflict> propagate(CNF &cnf, V &v, Level decisionLevel)
         }
         i++;
     }
-    return {cnf, v, NoConflict};
+    return NoConflict;
 }
 
 int getLevel(V &v, Literal literal)
@@ -219,14 +218,14 @@ int getLevel(V &v, Literal literal)
     return -1;
 }
 
-std::tuple<Clause, Level> analyzeConflict(V &v, Conflict c_conflict, Level decisionLevel)
+std::tuple<Clause, Level> analyzeConflict(V &v, Conflict const &c_conflict, Level decisionLevel)
 {
     std::set<std::tuple<Literal, Level>> previousLevelLiterals = std::set<std::tuple<Literal, Level>>();
     Set currentLevelLiterals = Set();
     Set allLiteralsInConflict = Set();
 
     int index = c_conflict.size() - 1;
-    for (Literal literal : c_conflict[index])
+    for (Literal const &literal : c_conflict[index])
     {
         int level = getLevel(v, -literal);
         if (level == decisionLevel)
@@ -244,10 +243,10 @@ std::tuple<Clause, Level> analyzeConflict(V &v, Conflict c_conflict, Level decis
     while (currentLevelLiterals.size() > 1)
     {
         index--;
-        Clause clauseToResolve = c_conflict[index];
+        Clause const &clauseToResolve = c_conflict[index];
         // unrelated unit propagation
         bool unrelated = true;
-        for (Literal literal : clauseToResolve)
+        for (Literal const &literal : clauseToResolve)
         {
             if (currentLevelLiterals.contains(literal))
             {
@@ -261,7 +260,7 @@ std::tuple<Clause, Level> analyzeConflict(V &v, Conflict c_conflict, Level decis
         }
 
         // resolve over literal backwards
-        for (Literal literal : clauseToResolve)
+        for (Literal const &literal : clauseToResolve)
         {
             // implied literal, now not pointed to
             if (currentLevelLiterals.contains(literal))
@@ -296,7 +295,7 @@ std::tuple<Clause, Level> analyzeConflict(V &v, Conflict c_conflict, Level decis
     }
 
     // update VSIDS
-    for (Literal literal : allLiteralsInConflict)
+    for (Literal const &literal : allLiteralsInConflict)
     {
         get<2>(get<2>(v)[abs(literal) - 1]) += b;
     }
@@ -305,7 +304,7 @@ std::tuple<Clause, Level> analyzeConflict(V &v, Conflict c_conflict, Level decis
     // scale all numbers if b is too large
     if (b > pow(10, 30))
     {
-        for (Info info : get<2>(v))
+        for (Info &info : get<2>(v))
         {
             get<2>(info) /= b;
         }
@@ -353,7 +352,7 @@ int luby(int i)
     return luby(i - pown(2, k - 1) + 1);
 }
 
-std::tuple<CNF, V, Level> applyRestartPolicy(CNF &cnf, V &v, Level decisionLevel)
+Level applyRestartPolicy(CNF const &_cnf, V &v, Level decisionLevel)
 {
     int newConflicts = statConflicts - oldStatConflicts;
 
@@ -369,18 +368,19 @@ std::tuple<CNF, V, Level> applyRestartPolicy(CNF &cnf, V &v, Level decisionLevel
         decisionLevel = 0;
     }
 
-    return {cnf, v, decisionLevel};
+    return decisionLevel;
 }
 
-V backtrack(V &v, Level new_decision_level)
+void backtrack(V &v, Level new_decision_level)
 {
     if (new_decision_level == 0)
     {
-        for (Literal lit : get<0>(v))
+        for (Literal const &lit : get<0>(v))
         {
             get<0>(get<2>(v)[abs(lit) - 1]) = false;
         }
-        return {LiteralList(), LevelList(), get<2>(v)};
+        v = {LiteralList(), LevelList(), get<2>(v)};
+        return;
     }
 
     for (int i = 0; i < get<1>(v).size(); i++)
@@ -396,7 +396,7 @@ V backtrack(V &v, Level new_decision_level)
             }
             get<0>(v).erase(get<0>(v).begin() + i + 1, get<0>(v).end());
             get<1>(v).erase(get<1>(v).begin() + i + 1, get<1>(v).end());
-            return v;
+            return;
         }
     }
     throw "No literal found to backtrack";
@@ -404,11 +404,7 @@ V backtrack(V &v, Level new_decision_level)
 
 std::tuple<bool, std::vector<Literal>, Conflict> CDCL(CNF &cnf)
 {
-    CNF ogCnf = CNF();
-    for (Clause clause : cnf)
-    {
-        ogCnf.push_back(clause);
-    }
+    int ogCnfSize = cnf.size();
     int decisionLevel = 0;
     int numLiterals = getNumLiterals(cnf);
     Conflict c_conflict = NoConflict;
@@ -423,15 +419,15 @@ std::tuple<bool, std::vector<Literal>, Conflict> CDCL(CNF &cnf)
     while (get<0>(v).size() < numLiterals)
     {
         decisionLevel++;
-        v = decide(cnf, v, decisionLevel);
-        tie(cnf, v, c_conflict) = propagate(cnf, v, decisionLevel);
+        decide(cnf, v, decisionLevel);
+        c_conflict = propagate(cnf, v, decisionLevel);
 
         while (c_conflict != NoConflict)
         {
             if (decisionLevel == 0)
             {
                 Conflict newClauses = Conflict();
-                for (int i = ogCnf.size(); i < cnf.size(); i++)
+                for (int i = ogCnfSize; i < cnf.size(); i++)
                 {
                     newClauses.push_back(cnf[i]);
                 }
@@ -440,10 +436,10 @@ std::tuple<bool, std::vector<Literal>, Conflict> CDCL(CNF &cnf)
             auto [learnedClause, new_decision_level] = analyzeConflict(v, c_conflict, decisionLevel);
             decisionLevel = new_decision_level;
             cnf.push_back(learnedClause);
-            v = backtrack(v, decisionLevel);
-            tie(cnf, v, c_conflict) = propagate(cnf, v, decisionLevel);
+            backtrack(v, decisionLevel);
+            c_conflict = propagate(cnf, v, decisionLevel);
         }
-        tie(cnf, v, decisionLevel) = applyRestartPolicy(cnf, v, decisionLevel);
+        decisionLevel = applyRestartPolicy(cnf, v, decisionLevel);
     }
     return {true, get<0>(v), NoConflict};
 }
@@ -537,11 +533,11 @@ std::tuple<CNF, string> readCnf(string filename)
 
     for (int i = 0; i < cnf.size(); i++)
     {
-        Clause clause = cnf[i];
+        Clause &clause = cnf[i];
         for (int j = 0; j < clause.size(); j++)
         {
             Literal lit = clause[j];
-            cnf[i][j] = sign(lit) * (indexOf(abs(lit), existingVars) + 1);
+            clause[j] = sign(lit) * (indexOf(abs(lit), existingVars) + 1);
         }
     }
 
@@ -568,9 +564,9 @@ int main(int argc, char const *argv[])
     {
         ofstream drat;
         drat.open("proof.drat");
-        for (Clause clause : conflict)
+        for (Clause const &clause : conflict)
         {
-            for (Literal literal : clause)
+            for (Literal const &literal : clause)
             {
                 drat << literal << " ";
             }
@@ -631,7 +627,7 @@ int main(int argc, char const *argv[])
              { return abs(a) < abs(b); });
         cout << "v ";
         int currentLineLength = 2;
-        for (int literal : assignment)
+        for (int const &literal : assignment)
         {
             if (currentLineLength + to_string(literal).length() > 78)
             {
@@ -647,7 +643,7 @@ int main(int argc, char const *argv[])
     cout << "c " << endl;
     cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "statistics" << end << lightBlue << " ] ---------------------------------------------------------" << end << endl;
     cout << "c " << endl;
-    for (tuple<string, string> stat : stats)
+    for (tuple<string, string> const &stat : stats)
         cout << "c " << get<0>(stat) << ":" << get<1>(stat) << endl;
     cout << "c " << endl;
     cout << "c " << lightBlue << "--- [ " << end << darkBlue << bold << "shutting down" << end << lightBlue << " ] ------------------------------------------------------" << end << endl;
