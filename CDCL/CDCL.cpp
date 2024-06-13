@@ -453,7 +453,7 @@ int sign(T val)
 
 // https://www.geeksforgeeks.org/binary-search/
 // An iterative binary search function.
-int binarySearch(LiteralList arr, int low, int high, Literal lit)
+int binarySearch(LiteralList const &arr, int low, int high, Literal lit)
 {
     while (low <= high)
     {
@@ -476,7 +476,7 @@ int binarySearch(LiteralList arr, int low, int high, Literal lit)
     return -1;
 }
 
-int indexOf(Literal lit, LiteralList arr)
+int indexOf(Literal lit, LiteralList const &arr)
 {
     int result = binarySearch(arr, 0, arr.size() - 1, lit);
     if (result == -1)
