@@ -40,6 +40,9 @@ def isIn(literal: Literal, v: V) -> bool:
     info = v[2][abs(literal)-1]
     return info[0] and info[1] == literal
 
+def getWatchedOfLiteral(v: V, literal: Literal ) -> list[int]:
+    return v[2][abs(literal)-1][3 if literal > 0 else 4]
+
 def getNumLiterals(cnf: CNF) -> int:
     return len(set([abs(l) for c in cnf for l in c]))
 
@@ -62,7 +65,7 @@ def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
         # get random unset literal
         allUnsetLiterals = [info[1] for info in v[2] if info[0] == False]
         literal = random.choice(allUnsetLiterals)
-        return setLiteral(v,literal, decisionLevel)
+        return setLiteral(v,literal, decisionLevel), literal
     
     max = 0
     literal = 0
@@ -71,12 +74,16 @@ def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
             max = info[2]
             literal = info[1]
             
-    return (setLiteral(v, literal, decisionLevel), literal)
+    return setLiteral(v, literal, decisionLevel), literal
 
 def propagate(cnf: CNF, v: V, decisionLevel: Level, decidedLiteral: Literal) -> tuple[V,Conflict]:  
     global statUP
     global statConflicts
     i = 0
+    
+    # backtracked to lvl 0
+    if decidedLiteral == 0:
+        return v, None
     
     decidedClauses = []
     decidedLiterals = [decidedLiteral]
@@ -85,90 +92,43 @@ def propagate(cnf: CNF, v: V, decisionLevel: Level, decidedLiteral: Literal) -> 
         currentLiteral = decidedLiterals.pop(0)
         
         # get all clauses with -currentLiteral as watched literal
-        watchedClauseIndices = v[2][abs(currentLiteral)-1][4 if currentLiteral > 0 else 3]
-        for i in watchedClauseIndices:
-            clause = cnf[i]
-            # clause is satisfied
-            currLiteralIndex = 0 if clause[0] == currentLiteral else 1
-            otherWatchedLiteral = clause[1 - currLiteralIndex]
+        watchedClauseIndices = getWatchedOfLiteral(v, -currentLiteral)
+        for clauseIndex in watchedClauseIndices:
+            clause = cnf[clauseIndex]
             
-            for i in range(2,len(clause)):
-                if not isIn(clause[i],v):
-                    clause[currLiteralIndex], clause[i] = clause[i], clause[currLiteralIndex]
-                    # add clause to other watched literal
-                    v[2][abs(clause[currLiteralIndex])-1][3 if clause[currLiteralIndex] > 0 else 4].append(i)
-                    break
-            else:
-                # potential unit propagation
-                if otherWatchedLiteral not in v[0]:
-                    setLiteral(v, otherWatchedLiteral, decisionLevel)
-                    decidedLiterals.append(otherWatchedLiteral)
-                    decidedClauses.append(clause)
-                else:
-                    # conflict
-                    statConflicts += 1
-                    return v, decidedClauses + [clause]
-    return v, None
-        
-        
-    
-            
-def propagate_old(cnf: CNF, v: V, decisionLevel: Level, decidedLiteral: Literal) -> tuple[V,Conflict]:   
-    global statUP
-    global statConflicts
-    i = 0
-    
-    decidedClauses = []
-    while i < len(cnf):
-        clause = cnf[i]
-        
-        if len(clause) > 1:
-            # clause is satisfied
-            if isIn(clause[0],v) or isIn(clause[1],v):
-                i += 1
-                continue
-            
-            if isIn(-clause[0],v):
-                for j in range(1, len(clause)):
-                    if not isIn(-clause[j],v):
-                        clause[0], clause[j] = clause[j], clause[0]
-                        break
-                # no non negative literal found -> conflict
-                else: 
-                    statConflicts += 1
-                    return v, decidedClauses + [clause]
-            # new literal is true -> invariant fulfilled
-            if isIn(clause[0],v):
-                i += 1
-                continue
-            if isIn(-clause[1],v):
-                for j in range(2, len(clause)):
-                    if not isIn(-clause[j],v):
-                        clause[1], clause[j] = clause[j], clause[1]
-                        break
-                # only 1 non negative literal found -> unit propagation
-                else: 
-                    setLiteral(v, clause[0], decisionLevel)
-                    decidedClauses.append(clause)
-                    i = 0
-                    statUP += 1
+            if len(clause) > 1:
+                currLiteralIndex = 0 if clause[0] == -currentLiteral else 1
+                otherWatchedLiteral = clause[1 - currLiteralIndex]
+                
+                # clause already satisfied
+                if isIn(otherWatchedLiteral,v):
                     continue
-        # clause only contains one literal -> conflict if false, unit propagation if not yet true
-        else:
-            if isIn(clause[0],v):
-                i += 1
-                continue
-            elif isIn(-clause[0],v):
+                # seek if new literal can be watched
+                for i in range(2,len(clause)):
+                    if not isIn(-clause[i],v):
+                        clause[currLiteralIndex], clause[i] = clause[i], clause[currLiteralIndex]
+                        # add clause to other watched literal
+                        getWatchedOfLiteral(v, clause[currLiteralIndex]).append(clauseIndex)
+                        # remove clause from current watched literal
+                        getWatchedOfLiteral(v, -currentLiteral).remove(clauseIndex)
+                        break
+                # no literal found: clause is unit or conflict
+                else:
+                    # potential unit propagation
+                    if not isIn(-otherWatchedLiteral,v):
+                        setLiteral(v, otherWatchedLiteral, decisionLevel)
+                        decidedLiterals.append(otherWatchedLiteral)
+                        decidedClauses.append(clause)
+                        statUP += 1
+                    # conflict
+                    else:
+                        statConflicts += 1
+                        return v, decidedClauses + [clause]
+            # only one literal -> conflict
+            else:
                 statConflicts += 1
                 return v, decidedClauses + [clause]
-            else:
-                setLiteral(v, clause[0], decisionLevel)
-                decidedClauses.append(clause)
-                i = 0
-                statUP += 1
-                continue
-        i += 1
-    return v, None
+    return v, None      
 
 def analyzeConflict(v: V, c_conflict: Conflict, decisionLevel: Level) -> tuple[Clause, Level]:
     previousLevelLiterals = set()
@@ -241,11 +201,10 @@ def luby(i: int) -> int:
         return 2**(k-1)
     return luby(i-2**(k-1)+1)
 
-# todo: wie ist nach i-ter neustart nach c*ti konflikten zu interpretieren? c*ti weiteren?
 def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level) -> tuple[CNF, V, Level]:
     global statRestarts
     global statConflicts
-    global c
+    global c_luby
     global oldStatConflicts
     
     newConflicts = statConflicts - oldStatConflicts
@@ -260,11 +219,11 @@ def applyRestartPolicy(cnf: CNF, v: V, decisionLevel: Level) -> tuple[CNF, V, Le
     
     return cnf, v, decisionLevel
 
-def backtrack(v : V, new_decision_level: Level) -> V:
+def backtrack(v : V, new_decision_level: Level) -> tuple[V, Literal]:
     if new_decision_level == 0:
         for lit in v[0]:
             v[2][abs(lit)-1][0] = False
-        return [],[], v[2]
+        return ([],[], v[2]), 0
     
     for i, level in enumerate(v[1]):
         # first found literal is decisionLiteral of that level
@@ -276,13 +235,27 @@ def backtrack(v : V, new_decision_level: Level) -> V:
     else:
         raise Exception("No literal found to backtrack")
 
+def add_clause(cnf: CNF, v: V, clause: Clause) -> tuple[CNF, V]:
+    # sort clause by decision level
+    clause.sort(key=lambda x: v[1][v[0].index(-x)])
+    
+    # add clause to cnf
+    cnf.append(clause)
+    
+    # add watched literals
+    for i in range(2):
+        if len(clause) > i:
+            v[2][abs(clause[i])-1][3 if clause[i] > 0 else 4].append(len(cnf)-1)
+    
+    return cnf, v
+
 # if sat, return True and v, else return False and list of added clauses
 def CDCL(cnf: CNF) -> tuple[True, list[int]] | tuple[False,  list[Clause]] :
     ogCnf = deepcopy(cnf)
     decisionLevel = 0
     numLiterals = getNumLiterals(cnf)
     # initialise all variables to negative
-    v : V = ([],[],[[False,-i,0,[]] for i in range(1,numLiterals+1)])
+    v : V = ([],[],[[False,-i,0,[],[]] for i in range(1,numLiterals+1)])
     # get all watched literals
     for i, clause in enumerate(cnf):
         v[2][abs(clause[0])-1][3 if clause[0] > 0 else 4].append(i)
@@ -297,16 +270,21 @@ def CDCL(cnf: CNF) -> tuple[True, list[int]] | tuple[False,  list[Clause]] :
             if decisionLevel == 0:
                 return False, cnf[len(ogCnf):]
             c_learned, decisionLevel = analyzeConflict(v, c_conflict, decisionLevel)
-            cnf.append(c_learned)
+            cnf, v = add_clause(cnf, v, c_learned)
             v, decidedLiteral  = backtrack(v, decisionLevel)
             v, c_conflict = propagate(cnf, v, decisionLevel, decidedLiteral)
         cnf,v,decisionLevel = applyRestartPolicy(cnf, v, decisionLevel)
     return True, v[0]
 
-if len(sys.argv) != 2:
+if len(sys.argv) == 2:
+    filename = sys.argv[1]
+elif len(sys.argv) == 1:
+    from pathlib import Path
+    filename = str(Path(__file__).parent.parent.joinpath("randomCnf.cnf"))
+else:
     sys.exit("Usage: python CDCL.py filename")
+    
 
-filename = sys.argv[1]
 
 cnf = cnf_utils.read_cnf(filename)
 sat, v = CDCL(cnf)
