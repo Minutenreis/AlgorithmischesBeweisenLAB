@@ -53,7 +53,7 @@ def setLiteral(v: V,literal: Literal, decisionLevel: Level) -> V:
     v[2][abs(literal)-1][1] = literal
     return v
 
-def decide(cnf: CNF, v: V, decisionLevel: Level) -> V:
+def decide(v: V, decisionLevel: Level) -> V:
     global statDecision
     statDecision += 1
     
@@ -264,7 +264,7 @@ def CDCL(cnf: CNF) -> tuple[True, list[int]] | tuple[False,  list[Clause]] :
     
     while len(v[0]) < numLiterals:
         decisionLevel += 1
-        v, decidedLiteral = decide(cnf, v, decisionLevel)
+        v, decidedLiteral = decide(v, decisionLevel)
         v, c_conflict = propagate(cnf, v, decisionLevel, decidedLiteral)
         while c_conflict is not None:
             if decisionLevel == 0:
