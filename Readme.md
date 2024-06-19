@@ -26,6 +26,18 @@ k - number of literals per clause
 outputfile - optional output file (default: randomCnf.cnf)
 ```
 
+## 2-SAT
+
+To run the 2-SAT algorithm, run the following command:
+
+```
+python3.12 2SAT/2SAT.py inputfile
+inputfile - the input CNF file
+```
+
+it outputs to stdout in CaDiCaL style
+No proof is generated for UNSAT instances
+
 ## DP
 
 To run the Davis-Putnam algorithm, run the following command:
