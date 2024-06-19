@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 import subprocess
 import time
@@ -54,6 +55,7 @@ statTimeSolver = 0
 statTimeGen = 0
 statTimeDrat = 0
 
+Path("temp").mkdir(parents=True, exist_ok=True)
 solver1Output = 'temp/solverOutput.txt'
 file = open(solver1Output, 'w')
 
