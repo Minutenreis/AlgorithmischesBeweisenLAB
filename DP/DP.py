@@ -107,6 +107,7 @@ def DP(cnf: list[list[int]]) -> bool:
 
 if len(sys.argv) != 2:
     print("Usage: python DP.py filename")
+    print("filename: path to the cnf file")
     sys.exit(1)
 
 filename = sys.argv[1]

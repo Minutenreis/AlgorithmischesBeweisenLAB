@@ -25,21 +25,18 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
-if len(sys.argv) != 5:
-    print("Usage: python benchmark.py <solver1> <solver2> <n> <tries>")
-    print("<solver>: path to the solver executable")
+if len(sys.argv) != 5 and len(sys.argv) != 6:
+    print("Usage: python benchmark.py solver1 solver2 n tries [generator]")
+    print("solver1: path to the solver1 (python3.12) or one of the following: CDCL, DPLL, DP")
+    print("solver2: path to the solver2 (python3.12) or one of the following: CDCL, DPLL, DP")
+    print("n: number of literals if randomGenerator is used, number of source nodes if Pebbling is used, number of holes in the PHP if PHP is used")
+    print("tries: number of CNFs to generate and test")
+    print("[generator]: path to the generator (python3.12) or one of the following: PHP, Pebbling, Random  (optional)")
     sys.exit(1)
 
-python = [True,True]
-
-def getPath(solver, num):
+def getPath(solver):
     if (solver.upper() == "CDCL"):
         return "CDCL/CDCL.py"
-    elif (solver.upper() == "CDCL-CPP"):
-        subprocess.call(["mkdir", "-p", "CDCL/bin"])
-        subprocess.call(["g++", "CDCL/CDCL.cpp","-std=c++20","-O3", "-o", "CDCL/bin/CDCL"])
-        python[num] = False
-        return "./CDCL/CDCL.cpp"
     elif (solver.upper() == "DPLL"):
         return "DPLL/DPLL.py"
     elif (solver.upper() == "DP"):
@@ -58,6 +55,14 @@ solver2Path = getPath(solver2,1)
 n = sys.argv[3]
 tries = int(sys.argv[4])
 
+generator = sys.argv[5] if len(sys.argv) == 6 else "random"
+if (generator.upper() == "PHP"):
+    generator = "Generator/PHP.py"
+elif (generator.upper() == "PEBBLING"):
+    generator = "Generator/Pebbling.py"
+elif (generator.upper() == "RANDOM"):
+    generator = "Generator/randomCnf.py"
+
 statTimeSolver1 = 0
 statTimeSolver2 = 0
 statTimeGen = 0
@@ -72,21 +77,15 @@ file2 = open(solver2Output, 'w')
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
     timeGenStart = time.perf_counter()
-    subprocess.call(["python3.12", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
+    subprocess.call(["python3.12", generator, n])
     timeGenEnd = time.perf_counter()
     
     timeSolver1Start = time.perf_counter()
-    if (python[0]):
-        satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
-    else:
-        satSolver1 = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file1)
+    satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
     timeSolver1End = time.perf_counter()
     
     timeSolver2Start = time.perf_counter()
-    if (python[1]):
-        satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
-    else:
-        satSolver2 = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file2)
+    satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
     timeSolver2End = time.perf_counter()
     
     if (satSolver1 != satSolver2):

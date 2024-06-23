@@ -289,7 +289,9 @@ elif len(sys.argv) == 1:
     from pathlib import Path
     filename = str(Path(__file__).parent.parent.joinpath("randomCnf.cnf"))
 else:
-    sys.exit("Usage: python CDCL.py filename")
+    print("Usage: python CDCL.py filename")
+    print("filename: path to the cnf file")
+    sys.exit(1)
     
 
 

@@ -27,17 +27,17 @@ def random_cnf(n, c, k):
     clauses.sort() # for easier visual comparison
     return clauses
 
-if len(sys.argv) != 4 and len(sys.argv) != 5:
-    print("Usage: python randomCnf.py n c k [outputName]")
+if len(sys.argv) < 2 and len(sys.argv) > 5:
+    print("Usage: python randomCnf.py n [c] [k] [outputName]")
     print("n: number of variables")
-    print("c: number of clauses")
-    print("k: number of literals per clause")
+    print("[c]: number of clauses (optional, default: 3.8*n)")
+    print("[k]: number of literals per clause (optional, default: 3)")
     print("outputName: name of the output file (optional)")
     sys.exit(1)
 
 n = int(sys.argv[1])
-c = int(sys.argv[2])
-k = int(sys.argv[3])
+c = int(sys.argv[2]) if len(sys.argv) > 2 else round(3.8 * n)
+k = int(sys.argv[3]) if len(sys.argv) > 3 else 3
 filenameInput = sys.argv[4] if len(sys.argv) == 5 else "randomCnf.cnf"
 filename = filenameInput if filenameInput.endswith(".cnf") else filenameInput + ".cnf"
 

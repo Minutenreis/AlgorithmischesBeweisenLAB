@@ -25,23 +25,19 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
-if len(sys.argv) != 4:
-    print("Usage: python test.py <solver> <n> <tries>")
-    print("<solver>: path to the solver executable")
+if len(sys.argv) != 4 and len(sys.argv) != 5:
+    print("Usage: python test.py solver n tries [generator]")
+    print("solver: path to the solver (python3.12) or one of the following: CDCL, DPLL, DP")
+    print("n: number of literals if randomGenerator is used, number of source nodes if Pebbling is used, number of holes in the PHP if PHP is used")
+    print("tries: number of CNFs to generate and test")
+    print("[generator]: path to the generator (python3.12) or one of the following: PHP, Pebbling, Random  (optional)")
     sys.exit(1)
 
 solver = sys.argv[1]
 proof = False
-python = True
 if (solver.upper() == "CDCL"):
     solver = "CDCL/CDCL.py"
     proof = True
-elif (solver.upper() == "CDCL-CPP"):
-    solver = "CDCL/CDCL.cpp"
-    subprocess.call(["mkdir", "-p", "CDCL/bin"])
-    subprocess.call(["g++", "CDCL/CDCL.cpp","-std=c++20","-O3", "-o", "CDCL/bin/CDCL"])
-    proof = True
-    python = False
 elif (solver.upper() == "DPLL"):
     solver = "DPLL/DPLL.py"
 elif (solver.upper() == "DP"):
@@ -50,6 +46,18 @@ elif (solver.upper() == "DP"):
 n = sys.argv[2]
 tries = int(sys.argv[3])
 
+if (len(sys.argv) == 5):
+    generator = sys.argv[4]
+    
+
+generator = sys.argv[4] if len(sys.argv) == 5 else "random"
+if (generator.upper() == "PHP"):
+    generator = "Generator/PHP.py"
+elif (generator.upper() == "PEBBLING"):
+    generator = "Generator/Pebbling.py"
+elif (generator.upper() == "RANDOM"):
+    generator = "Generator/randomCnf.py"
+        
 statTimeCadical = 0
 statTimeSolver = 0
 statTimeGen = 0
@@ -62,14 +70,11 @@ file = open(solver1Output, 'w')
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
     timeGenStart = time.perf_counter()
-    subprocess.call(["python3.12", "RandomCNF/randomCnf.py", n, str(round(3.8 * int(n))), "3"])
+    subprocess.call(["python3.12", generator, n])
     timeGenEnd = time.perf_counter()
     
     timeSolverStart = time.perf_counter()
-    if (python):
-        satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=file)
-    else:
-        satSolver = subprocess.call(["CDCL/bin/CDCL", "randomCnf.cnf"],stdout=file)
+    satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=file)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):

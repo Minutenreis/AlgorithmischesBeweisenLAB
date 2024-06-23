@@ -4,7 +4,7 @@
 
 ## Allgemeines
 
-Alle Algorithmen wurden mit `Python 3.12` geschrieben, die C++ Codes sind nicht gedacht für die Abgabe!
+Alle Algorithmen wurden mit `Python 3.12` geschrieben.
 
 CaDiCaL Style refers to the following output format:
 ```
@@ -14,16 +14,32 @@ v variable assignments (if SATISFIABLE)
 ```
 and that the program should exit with status code 10 for SATISFIABLE and 20 for UNSATISFIABLE
 
-## Generating Random CNF's
+## Generating CNF's
 
-To generate random CNF's, run the following command:
+To generate a random CNF file, run the following command:
 
 ```
-python3.12 RandomCNF/RandomCNF.py n c k [outputfile]
-n - number of variables
-c - number of clauses
-k - number of literals per clause
-outputfile - optional output file (default: randomCnf.cnf)
+python3.12 Generator/RandomCNF.py n [c] [k] [outputName]
+n: number of variables
+[c]: number of clauses (optional, default: 3.8*n)
+[k]: number of literals per clause (optional, default: 3)
+outputName: name of the output file (optional)
+```
+
+To generate a PHP CNF file, run the following command:
+
+```
+python3.12 Generator/PHP.py n [outputfile]
+n: number of holes in the PHP
+outputName: name of the output file (optional)
+```
+
+To generate a Pebbling CNF file, run the following command:
+
+```
+python3.12 Generator/Pebbling.py n [outputfile]
+n: number of source nodes
+outputName: name of the output file (optional)
 ```
 
 ## 2-SAT
@@ -43,8 +59,8 @@ No proof is generated for UNSAT instances
 To run the Davis-Putnam algorithm, run the following command:
 
 ```
-python3.12 DP/DP.py inputfile
-inputfile - the input CNF file
+python3.12 DP/DP.py filename
+filename: path to the cnf file
 ```
 
 it outputs to stdout in CaDiCaL style
@@ -55,8 +71,8 @@ No proof is generated for UNSAT instances
 To run the DPLL algorithm, run the following command:
 
 ```
-python3.12 DPLL/DPLL.py inputfile
-inputfile - the input CNF file
+python3.12 DPLL/DPLL.py filename
+filename: path to the cnf file
 ```
 
 it outputs to stdout in CaDiCaL style
@@ -67,8 +83,8 @@ No proof is generated for UNSAT instances
 To run the CDCL algorithm, run the following command:
 
 ```
-python3.12 CDCL/CDCL.py inputfile
-inputfile - the input CNF file
+python3.12 CDCL/CDCL.py filename
+filename: path to the cnf file
 ```
 
 it outputs to stdout in CaDiCaL style
@@ -91,17 +107,19 @@ or
 
 You may also run my tests with 
 ```
-python3.12 test.py solver n tries
-solver - CDCL, DPLL, DP or path to Solver
-n - number of literals in generated CNF
-tries - number of tries to run the solver
+python3.12 test.py solver n tries [generator]
+solver: path to the solver (python3.12) or one of the following: CDCL, DPLL, DP
+n: number of literals if randomGenerator is used, number of sourcenodes if Pebbling is used, number of holes in the PHP if PHP is used
+tries: number of CNFs to generate and test
+[generator]: path to the generator (python3.12) or one of thefollowing: PHP, Pebbling, Random  (optional)
 ```
 
 or run my comparitive benchmark with
 ```
-python3.12 benchmark.py solver1 solver2 n tries
-solver1 - CDCL, DPLL, DP or path to Solver
-solver2 - CDCL, DPLL, DP or path to Solver
-n - number of literals in generated CNF
-tries - number of tries to run the solver
+python3.12 benchmark.py solver1 solver2 n tries [generator]
+solver1: path to the solver1 (python3.12) or one of the following: CDCL, DPLL, DP
+solver2: path to the solver2 (python3.12) or one of the following: CDCL, DPLL, DP
+n: number of literals if randomGenerator is used, number of source nodes if Pebbling is used, number of holes in the PHP if PHP is used
+tries: number of CNFs to generate and test
+[generator]: path to the generator (python3.12) or one of the following: PHP, Pebbling, Random  (optional)
 ```

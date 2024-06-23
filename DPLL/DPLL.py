@@ -112,7 +112,9 @@ def DPLL(cnf: list[list[int]], v: set[int] = set()) -> tuple[bool,set[int]]:
     
 
 if len(sys.argv) != 2:
-    sys.exit("Usage: python DPLL.py filename")
+    print("Usage: python DPLL.py filename")
+    print("filename: path to the cnf file")
+    sys.exit(1)
 
 filename = sys.argv[1]
 
