@@ -1,5 +1,6 @@
 type Literal = int
 type Clause = list[Literal]
+type CNF = list[Clause]
 
 # Class that keeps track of the state of literals
 class Assignment:
@@ -12,12 +13,16 @@ class Assignment:
         self.watchedWithLiteral: list[int] = [] # list[ClauseIndex]
         self.watchedWithNegLiteral: list[int] = [] # list[ClauseIndex]
     
+    # outputs watched list of literal
+    def getWatched(self, literal: Literal) -> list[Clause]:
+        if literal > 0:
+            return self.watchedWithLiteral
+        else:
+            return self.watchedWithNegLiteral
+    
     # outputs watched list of opposite polarity of literal
     def getWatchedReverse(self, literal: Literal) -> list[Clause]:
-        if literal > 0:
-            return self.watchedWithNegLiteral
-        else:
-            return self.watchedWithLiteral
+        return self.getWatched(-literal)
     
     # removes clause with index clauseIndex from watched list, if maxClauseIndex is present, it gets replaced with clauseIndex
     def removeClause(self, clauseIndex: int, maxClauseIndex: int) -> None:
@@ -29,9 +34,13 @@ class Assignment:
         self.watchedWithNegLiteral = [clauseIndex if c == maxClauseIndex else c for c in self.watchedWithNegLiteral]
     
 class Assignments:
-    def __init__(self, numLiterals: int):
+    def __init__(self, numLiterals: int, cnf: CNF):
         self.assignments: list[Assignment] = [Assignment(i) for i in range(numLiterals + 1)]
-    
+        for i, clause in enumerate(cnf):
+            for j in range(2):
+                if len(clause) > j:
+                    self.getAssignment(clause[j]).getWatched(clause[j]).append(i)  
+
     # returns the assignment of a literal
     def getAssignment(self, literal: Literal) -> Assignment:
         return self.assignments[abs(literal)]
