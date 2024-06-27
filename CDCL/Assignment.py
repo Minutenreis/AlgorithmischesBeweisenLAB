@@ -14,27 +14,45 @@ class Assignment:
         self.watchedWithNegLiteral: list[int] = [] # list[ClauseIndex]
     
     # outputs watched list of literal
-    def getWatched(self, literal: Literal) -> list[Clause]:
+    def getWatched(self, literal: Literal) -> list[int]:
         if literal > 0:
             return self.watchedWithLiteral
         else:
             return self.watchedWithNegLiteral
+        
+    # adds clauseIndex to watched list of literal
+    def addWatched(self, clauseIndex: int, polarity: Literal) -> None:
+        if polarity > 0:
+            self.watchedWithLiteral.append(clauseIndex)
+        else:
+            self.watchedWithNegLiteral.append(clauseIndex)
+    
+    # remove clauseIndex from watched list of literal
+    def removeWatched(self, clauseIndex: int, polarity: Literal) -> None:
+        if polarity > 0:
+            self.watchedWithLiteral = [c for c in self.watchedWithLiteral if c != clauseIndex]
+        else:
+            self.watchedWithNegLiteral = [c for c in self.watchedWithNegLiteral if c != clauseIndex]
     
     # outputs watched list of opposite polarity of literal
-    def getWatchedReverse(self, literal: Literal) -> list[Clause]:
+    def getWatchedReverse(self, literal: Literal) -> list[int]:
         return self.getWatched(-literal)
     
-    # removes clause with index clauseIndex from watched list, if maxClauseIndex is present, it gets replaced with clauseIndex
-    def removeClause(self, clauseIndex: int, maxClauseIndex: int) -> None:
+    # removes clause with index clauseIndex from watched list
+    def removeClause(self, clauseIndex: int) -> None:
         self.watchedWithLiteral = [c for c in self.watchedWithLiteral if c != clauseIndex]
         self.watchedWithNegLiteral = [c for c in self.watchedWithNegLiteral if c != clauseIndex]
-        if clauseIndex == maxClauseIndex:
-            return
-        self.watchedWithLiteral = [clauseIndex if c == maxClauseIndex else c for c in self.watchedWithLiteral]
-        self.watchedWithNegLiteral = [clauseIndex if c == maxClauseIndex else c for c in self.watchedWithNegLiteral]
+    
+    # changes clause index from oldIndex to newIndex
+    def changeClause(self, oldIndex: int, newIndex: int) -> None:
+        self.watchedWithLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithLiteral]
+        self.watchedWithNegLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithNegLiteral]
     
 class Assignments:
     def __init__(self, numLiterals: int, cnf: CNF):
+        # order in which the variables are assigned
+        self.history: list[Literal] = []
+        # list of all assignments
         self.assignments: list[Assignment] = [Assignment(i) for i in range(numLiterals + 1)]
         for i, clause in enumerate(cnf):
             for j in range(2):
@@ -49,14 +67,20 @@ class Assignments:
     def __contains__(self, literal: Literal) -> bool:
         return self.getAssignment(literal).set and self.getAssignment(literal).polarity == literal
 
-    def setLiteral(self, literal: Literal, level: int, history: list[Literal], implyingClause: Clause) -> None:
+    def setLiteral(self, literal: Literal, level: int, implyingClause: Clause) -> None:
         self.getAssignment(literal).set = True
         self.getAssignment(literal).polarity = literal
         self.getAssignment(literal).level = level
-        history.append(literal)
+        self.history.append(literal)
+        self.getAssignment(literal).parents = []
         for lit in implyingClause:
             # own literal
             if lit == literal:
                 continue
             # add -literal to parents -> x1 ∨ x2 ∨ x3 <=> -x1 ∧ -x2 -> x3
             self.getAssignment(literal).parents.append(-lit)
+    
+    def restart(self) -> None:
+        self.history = []
+        for assignment in self.assignments:
+            assignment.set = False
