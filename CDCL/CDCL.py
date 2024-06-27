@@ -23,6 +23,7 @@ statUP = 0
 statDecision = 0
 statConflicts = 0
 statLearnedClauses = 0
+statDeletedClauses = 0
 statMaxLengthLearnedClause = 0
 statRestarts = 0
 b = 2
@@ -236,9 +237,11 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
         if optClauseDeletion:
             global lbdLimit
             global lbdFactor
+            global statDeletedClauses
             for i in range(len(cnf) - 1, ogCnfLength - 1, -1):
                 # delete clause by swapping it with last clause and then deleting the last clause
                 if lbd[i] > lbdLimit:
+                    statDeletedClauses += 1
                     clauseToDelete = cnf[i]
                     clauseToSwap = cnf[-1]
                     # remove clause from watched list (swap with last clause, then delete)
@@ -374,6 +377,7 @@ cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
     ("decisions", str(statDecision)),
     ("conflicts", str(statConflicts)),
     ("learned clauses", str(statLearnedClauses)),
+    ("deleted clauses", str(statDeletedClauses)),
     ("max learned clause length", str(statMaxLengthLearnedClause)),
     ("num Restarts", str(statRestarts)),
     ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
