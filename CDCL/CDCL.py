@@ -84,7 +84,7 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
             clause = cnf[clauseIndex]
             
             if len(clause) >= 2:
-                ownIndex = 0 if clause[0] == literal else 1
+                ownIndex = 0 if clause[0] == -literal else 1
                 otherLiteralInd = 1 - ownIndex
                 otherLiteral = clause[otherLiteralInd]
                 
@@ -322,7 +322,7 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
         while c_conflict is not None:
             # conflict on decision level means UNSAT
             if decisionLevel == 0:
-                return False, cnf[ogCnfSize:]
+                return False, cnf[ogCnfSize:]+[]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
             learnClause(cnf, assignments, lbd, c_learned, decisionLevel)

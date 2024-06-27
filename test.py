@@ -65,6 +65,7 @@ statTimeTruthcheck = 0
 statTimeSolver = 0
 statTimeGen = 0
 statTimeDrat = 0
+statTimeCadical = 0
 
 Path("temp").mkdir(parents=True, exist_ok=True)
 solver1Output = 'temp/solverOutput.txt'
@@ -90,6 +91,14 @@ for i in range(tries):
             print(f"Error: {solver} did not produce a correct proof")
             sys.exit(1)
         statTimeDrat += timeDratEnd - timeDratStart
+    elif (not proof and satSolver == 20):
+        timeCadicalStart = time.perf_counter()
+        satCadical = subprocess.call(["./Submodules/cadical/build/cadical", cnfFilename], stdout=subprocess.DEVNULL)
+        timeCadicalEnd = time.perf_counter()
+        if (satCadical == 10):
+            print("Error: Cadical found valid assignment while {solver} did not")
+            sys.exit(1)
+        statTimeCadical += timeCadicalEnd - timeCadicalStart
     else:
         timeCheckTruthynessStart = time.perf_counter()
         checkTruthyness = subprocess.call(["python3.12","checkTruthyness.py", cnfFilename , solver1Output], stdout=subprocess.DEVNULL)
@@ -106,6 +115,7 @@ for i in range(tries):
 print("All tests passed")
 print("Time spent in drat-trim: ", statTimeDrat, "s")
 print("Time spent in TruthChecker: ", statTimeTruthcheck, "s")
+print("Time spent in Cadical: ", statTimeCadical, "s")
 print(f"Time spent in {solver}: ", statTimeSolver, "s")
 print("Time spent generating CNFs: ", statTimeGen, "s")
     

@@ -46,6 +46,18 @@ class TestCDCL(unittest.TestCase):
         self.assertTrue(assignments.getAssignment(3).set)
         self.assertEqual(cnf[0], [3,2,1])
     
+    def test_propagateError(self):
+        cnf = [[-3,-5,-6],[1,-2,-4]]
+        assignments = Assignment.Assignments(6, cnf)
+        assignments.setLiteral(-6,1,[-6])
+        assignments.setLiteral(-5,2,[-5])
+        assignments.setLiteral(-4,3,[-4])
+        assignments.setLiteral(-3,4,[-3])
+        assignments.setLiteral(-2,5,[-2])
+        assignments.setLiteral(-1,6,[-1])
+        c_conflict = CDCL.propagate(cnf,assignments, 6)
+        self.assertIs(c_conflict, None)
+    
     def test_analyzeConflict(self):
         pass
     
