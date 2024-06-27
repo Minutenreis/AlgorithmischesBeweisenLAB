@@ -14,25 +14,25 @@ if n < 1:
     print("n must be at least 1")
     sys.exit(1)
 
-clauses = []
+cnf = []
 
 # jede Taube muss in mind. einem Nest sein
-
+# i = Taube column, j = Nest row, row major
 for i in range(n+1):
     clause = []
     for j in range(n):
-        clause.append(i*(n+1)+j+1)
-    clauses.append(clause)
+        clause.append(i+j*(n+1)+1)
+    cnf.append(clause)
 
 # keine 2 Tauben in einem Nest
 
-for i1 in range(0, n+1):
-    for i2 in range(i1+1, n+1):
-        for j in range(0, n):
-            clauses.append([-(i1*(n+1)+j+1), -(i2*(n+1)+j+1)])
+for j in range(n):
+    for i1 in range(n+1):
+        for i2 in range(i1+1, n+1):
+            cnf.append([-(i1+j*(n+1)+1), -(i2+j*(n+1)+1)])
 
 # write to file
 with open(filename, "w") as f:
-    f.write("p cnf " + str(n*(n+1)) + " " + str(len(clauses)) + "\n")
-    for clause in clauses:
+    f.write("p cnf " + str(n*(n+1)) + " " + str(len(cnf)) + "\n")
+    for clause in cnf:
         f.write(" ".join(map(str, clause)) + " 0\n")

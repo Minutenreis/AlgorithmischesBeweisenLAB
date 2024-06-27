@@ -53,12 +53,15 @@ if (len(sys.argv) == 5):
 generator = sys.argv[4] if len(sys.argv) == 5 else "random"
 if (generator.upper() == "PHP"):
     generator = "Generator/PHP.py"
+    cnfFilename = "PHP.cnf"
 elif (generator.upper() == "PEBBLING"):
     generator = "Generator/Pebbling.py"
+    cnfFilename = "Pebbling.cnf"
 elif (generator.upper() == "RANDOM"):
     generator = "Generator/randomCnf.py"
+    cnfFilename = "randomCnf.cnf"
         
-statTimeCadical = 0
+statTimeTruthcheck = 0
 statTimeSolver = 0
 statTimeGen = 0
 statTimeDrat = 0
@@ -75,11 +78,12 @@ for i in range(tries):
     
     timeSolverStart = time.perf_counter()
     satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=file)
+    # satSolver = subprocess.call(["./Submodules/cadical/build/cadical", cnfFilename, "proof.drat"],stdout=file)
     timeSolverEnd = time.perf_counter()
     
     if (proof and satSolver == 20):
         timeDratStart = time.perf_counter()
-        correctDrat = subprocess.call(["./Submodules/drat-trim/drat-trim", "randomCnf.cnf", "proof.drat"],stdout=subprocess.DEVNULL)
+        correctDrat = subprocess.call(["./Submodules/drat-trim/drat-trim", cnfFilename, "proof.drat"],stdout=subprocess.DEVNULL)
         timeDratEnd = time.perf_counter()
         if (correctDrat != 0):
             print()
@@ -87,16 +91,13 @@ for i in range(tries):
             sys.exit(1)
         statTimeDrat += timeDratEnd - timeDratStart
     else:
-        timeCadicalStart = time.perf_counter()
-        satCadical = subprocess.call(["./Submodules/cadical/build/cadical", "randomCnf.cnf"], stdout=subprocess.DEVNULL)
-        timeCadicalEnd = time.perf_counter()
-        statTimeCadical += timeCadicalEnd - timeCadicalStart
-        if (satSolver != satCadical):
-            print()
-            print("Error: Solver output does not match Cadical output")
-            print("Cadical: ", satCadical)
-            print("Solver: ", satSolver)
+        timeCheckTruthynessStart = time.perf_counter()
+        checkTruthyness = subprocess.call(["python3.12","checkTruthyness.py", cnfFilename , solver1Output], stdout=subprocess.DEVNULL)
+        timeCheckTruthynessEnd = time.perf_counter()
+        if (checkTruthyness != 0):
+            print("Error: {solver} did not output valid assignment")
             sys.exit(1)
+        statTimeTruthcheck += timeCheckTruthynessEnd - timeCheckTruthynessStart
 
     statTimeSolver += timeSolverEnd - timeSolverStart
     statTimeGen += timeGenEnd - timeGenStart
@@ -104,7 +105,7 @@ for i in range(tries):
     
 print("All tests passed")
 print("Time spent in drat-trim: ", statTimeDrat, "s")
-print("Time spent in Cadical: ", statTimeCadical, "s")
+print("Time spent in TruthChecker: ", statTimeTruthcheck, "s")
 print(f"Time spent in {solver}: ", statTimeSolver, "s")
 print("Time spent generating CNFs: ", statTimeGen, "s")
     

@@ -16,14 +16,14 @@ if n < 2:
 
 numLiterals = n * (n + 1)//2
 
-clauses = []
+cnf = []
 
 # nodes are numbered left to right, top to bottom; each node gets 2 literals (one for black, one for white)
 # the first one being its index, the second one being its index + n*(n+1)/2
 
 # all source nodes must be either black or white
 for i in range(n):
-    clauses.append([i+1, i+numLiterals+1])
+    cnf.append([i+1, i+numLiterals+1])
 
 # if both parent nodes have a color, the child must have a color
 previousLineLength = n
@@ -38,15 +38,15 @@ for v in range(n,numLiterals):
     for a in range(2):
         for b in range(2):
             # left parent, right parent, self, self in White
-            clauses.append([-(v-previousLineLength+a*numLiterals+1), -(v-previousLineLength+1+b*numLiterals+1), v+1,v+numLiterals+1])
+            cnf.append([-(v-previousLineLength+a*numLiterals+1), -(v-previousLineLength+1+b*numLiterals+1), v+1,v+numLiterals+1])
 
 # final node may not have a stone
-clauses.append([-numLiterals])
-clauses.append([-numLiterals*2])
+cnf.append([-numLiterals])
+cnf.append([-numLiterals*2])
 
 # write to file
 with open(filename, "w") as f:
-    f.write("p cnf " + str(n*(n+1)) + " " + str(len(clauses)) + "\n")
-    for clause in clauses:
+    f.write("p cnf " + str(n*(n+1)) + " " + str(len(cnf)) + "\n")
+    for clause in cnf:
         f.write(" ".join(map(str, clause)) + " 0\n")
             

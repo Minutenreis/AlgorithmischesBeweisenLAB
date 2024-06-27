@@ -1,3 +1,9 @@
+def sign(n: int) -> int:
+    if n < 0:
+        return -1
+    else:
+        return 1
+
 """
 parse DIMACS CNF files
 filename: relative path to the DIMACS CNF file
@@ -5,6 +11,9 @@ returns: list of clauses
 """
 def read_cnf(filename: str) -> list[list[int]]:
     cnf: list[list[int]] = []
+    vars: set[int]= set()
+    
+    # read in cnf
     with open(filename, "r") as f:
         lines = f.readlines()
         for line in lines:
@@ -17,9 +26,18 @@ def read_cnf(filename: str) -> list[list[int]]:
                 literal = int(literal)
                 if literal == 0:
                     break
+                vars.add(abs(literal))
                 clause.append(literal)
             clause.sort(key=abs)
             cnf.append(clause)
+    
+    # map all variables to continuous list 1,2,...,n
+    existingVars = sorted(list(vars))
+    
+    for i, clause in enumerate(cnf):
+        for j, lit in enumerate(clause):
+            cnf[i][j] = sign(lit) * (existingVars.index(abs(lit))+1)
+    
     return cnf
 
 class bcolors:
