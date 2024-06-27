@@ -34,6 +34,26 @@ class TestCDCL(unittest.TestCase):
         CDCL.decide(assignments, 1)
         self.assertTrue(assignments.getAssignment(2).set or assignments.getAssignment(3).set)
         self.assertTrue(not (assignments.getAssignment(2).set and assignments.getAssignment(3).set))
+        
+    def test_propagate(self):
+        pass
+    
+    def test_analyzeConflict(self):
+        pass
+    
+    def test_backtrack(self):
+        pass
+    
+    def test_luby(self):
+        self.assertEqual(CDCL.luby(1), 1)
+        self.assertEqual(CDCL.luby(2), 1)
+        self.assertEqual(CDCL.luby(3), 2)
+    
+    def test_restart(self):
+        pass
+    
+    def test_learnAndPropagate(self):
+        pass
 
 class TestAssignment(unittest.TestCase):
     def test_init(self):
