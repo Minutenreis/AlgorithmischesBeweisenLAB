@@ -58,10 +58,13 @@ tries = int(sys.argv[4])
 generator = sys.argv[5] if len(sys.argv) == 6 else "random"
 if (generator.upper() == "PHP"):
     generator = "Generator/PHP.py"
+    cnfFilename = "PHP.cnf"
 elif (generator.upper() == "PEBBLING"):
     generator = "Generator/Pebbling.py"
+    cnfFilename = "Pebbling.cnf"
 elif (generator.upper() == "RANDOM"):
     generator = "Generator/randomCnf.py"
+    cnfFilename = "randomCnf.cnf"
 
 statTimeSolver1 = 0
 statTimeSolver2 = 0
@@ -81,11 +84,11 @@ for i in range(tries):
     timeGenEnd = time.perf_counter()
     
     timeSolver1Start = time.perf_counter()
-    satSolver1 = subprocess.call(["python3.12",solver1Path, "randomCnf.cnf"],stdout=file1)
+    satSolver1 = subprocess.call(["python3.12",solver1Path, cnfFilename],stdout=file1)
     timeSolver1End = time.perf_counter()
     
     timeSolver2Start = time.perf_counter()
-    satSolver2 = subprocess.call(["python3.12",solver2Path, "randomCnf.cnf"],stdout=file2)
+    satSolver2 = subprocess.call(["python3.12",solver2Path, cnfFilename],stdout=file2)
     timeSolver2End = time.perf_counter()
     
     if (satSolver1 != satSolver2):
