@@ -6,7 +6,7 @@ import math
 # c: number of clauses
 # k: number of literals per clause
 def random_cnf(n, c, k):
-    clauses = []
+    cnf = []
     for _ in range(c):
         # repeat clause generation until a new clause is found
         while True:
@@ -21,11 +21,11 @@ def random_cnf(n, c, k):
                     literal = -literal
                 clause.append(literal)
                 clause.sort(key=abs)
-            if clause not in clauses:
+            if clause not in cnf:
                 break
-        clauses.append(clause)
-    clauses.sort() # for easier visual comparison
-    return clauses
+        cnf.append(clause)
+    cnf.sort() # for easier visual comparison
+    return cnf
 
 if len(sys.argv) < 2 and len(sys.argv) > 5:
     print("Usage: python randomCnf.py n [c] [k] [outputName]")
