@@ -92,8 +92,22 @@ class TestCDCL(unittest.TestCase):
         self.assertEqual(assignments.history, [1])
         self.assertEqual(CDCL.statRestarts, 1)  
     
-    def test_learnAndPropagate(self):
-        pass
+    def test_learnClause(self):
+        cnf = [[1, 2, 3], [-1, 2, 3], [1, -2, 3]]
+        lbd = [0,0,0]
+        assignments = gen_assignments()
+        assignments.setLiteral(1, 0, [1])
+        assignments.setLiteral(2, 1, [-1,2])
+        assignments.getAssignment(2).set = False
+        CDCL.learnClause(cnf, assignments, lbd,[-1,2],0)
+        self.assertEqual(len(cnf), 4)
+        self.assertEqual(len(lbd), 4)
+        self.assertEqual(cnf[3], [2,-1])
+        self.assertEqual(lbd[3], 2)
+        self.assertEqual(assignments.getAssignment(2).set, True)
+        self.assertTrue(assignments.getAssignment(2).getWatched(2), [0,1,3])
+        self.assertTrue(assignments.getAssignment(1).getWatchedReverse(1), [1,3])
+        
 
 class TestAssignment(unittest.TestCase):
     def test_init(self):

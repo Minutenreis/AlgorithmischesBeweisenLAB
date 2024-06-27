@@ -69,11 +69,11 @@ def decide(assignments: Assignments, decisionLevel: int) -> None:
     
     assignments.setLiteral(maxAssignment.polarity, decisionLevel, [])
 
-def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int, startIndex = -1) -> Clause:
+def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
     global statConflicts
     global statUP
     # newest literal has to be propagated (possibly violating the invariant)
-    literalsToPropagate = [assignments.history[startIndex]]
+    literalsToPropagate = [assignments.history[-1]]
     
     while len(literalsToPropagate) > 0:
         literal = literalsToPropagate.pop()
@@ -275,7 +275,7 @@ def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
         assignments.getAssignment(literal).set = False
     assignments.history = assignments.history[:literalsToKeep]
 
-def learnClauseAndPropagate(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int) -> Clause:
+def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int) -> None:
     global statLearnedClauses
     statLearnedClauses += 1
     
@@ -283,44 +283,25 @@ def learnClauseAndPropagate(cnf: CNF, assignments: Assignments, lbd: list[float]
     cnf.append(c_learned)
     
     global statUP
-    if len(c_learned) == 1:
-        statUP += 1
+    statUP += 1
         
-        # set watched literal
-        assignments.getAssignment(c_learned[0]).getWatched(c_learned[0]).append(len(cnf) - 1)
-        lbd.append(1)
+    # find unset literal
+    for i, literal in enumerate(c_learned):
+        if not assignments.getAssignment(literal).set:
+            # swap literals
+            c_learned[0], c_learned[i] = c_learned[i], c_learned[0]
+            break
         
-        # we set literal at level 0, because it will always be unit
-        assignments.setLiteral(c_learned[0], 0, c_learned)
-        # we need to put it at the beginning of the history since its level is 0
-        assignments.history.pop()
-        assignments.history.insert(0, c_learned[0])
+    # set watched literals
+    for literal in c_learned[:2]:
+        assignments.getAssignment(literal).addWatched(len(cnf) - 1, literal)
         
-        
-        # now we need to look if any invariant is violated because of it
-        return propagate(cnf, assignments, decisionLevel, 0)
-    else:
-        statUP += 1
-        
-        # find unset literal
-        for i, literal in enumerate(c_learned):
-            if not assignments.getAssignment(literal).set:
-                # swap literals
-                c_learned[0], c_learned[i] = c_learned[i], c_learned[0]
-                break
-        
-        # set watched literals
-        for literal in c_learned[:2]:
-            assignments.getAssignment(literal).addWatched(len(cnf) - 1, literal)
-        
-        # set literal
-        assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
-        
-        # calculate LBD
-        lbd.append(len(set([assignments.getAssignment(literal).level for literal in c_learned])))
-        
-        # propagate over newly set literal
-        return propagate(cnf, assignments, decisionLevel)
+    # calculate LBD
+    lbd.append(len(set([assignments.getAssignment(literal).level for literal in c_learned])))
+
+    # set literal
+    assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
+      
 
 def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
     ogCnfSize = len(cnf)
@@ -344,7 +325,8 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
                 return False, cnf[ogCnfSize:]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
-            c_conflict = learnClauseAndPropagate(cnf, assignments, lbd, c_learned, decisionLevel)
+            learnClause(cnf, assignments, lbd, c_learned, decisionLevel)
+            c_conflict = propagate(cnf, assignments, decisionLevel)
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history
 
