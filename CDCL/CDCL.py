@@ -227,7 +227,7 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
     
     conflictsSinceLastRestart = statConflicts - oldStatConflicts
     
-    if conflictsSinceLastRestart < c_luby * luby(statRestarts + 1):
+    if conflictsSinceLastRestart > c_luby * luby(statRestarts + 1):
         statRestarts += 1
         oldStatConflicts = statConflicts
         assignments.restart()
@@ -261,7 +261,7 @@ def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
     # TODO: FRAGEN: wie genau propagieren wir über die neue gelernte Klausel?
     
     literalsToKeep = 0
-    for i, literal in reversed(enumerate(assignments.history)):
+    for i, literal in reversed(list(enumerate(assignments.history))):
         level = assignments.getAssignment(literal).level
         # keep all literals on new Decision Level
         if level <= newDecisionLevel:
@@ -342,7 +342,7 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
                 return False, cnf[ogCnfSize:]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
-            c_conflict = learnClauseAndPropagate(c_learned)
+            c_conflict = learnClauseAndPropagate(cnf, assignments, lbd, c_learned, decisionLevel)
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history
 
