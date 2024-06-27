@@ -92,11 +92,6 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                 if otherLiteral in assignments:
                     continue
                 
-                # check if other literal is falsified -> conflict
-                if -otherLiteral in assignments:
-                    statConflicts += 1
-                    return clause
-                
                 # check if other literal can be watched
                 for i in range(2, len(clause)):
                     # literal can be watched if it is not falsified
@@ -105,14 +100,22 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                         clause[ownIndex], clause[i] = clause[i], clause[ownIndex]
                         assignments.getAssignment(literal).removeWatched(clauseIndex, -literal)
                         assignments.getAssignment(clause[ownIndex]).addWatched(clauseIndex, clause[ownIndex])
+                        # possible UP
+                        if -otherLiteral in assignments and clause[ownIndex] not in assignments:
+                            statUP += 1
+                            assignments.setLiteral(clause[ownIndex], decisionLevel, clause)
+                            literalsToPropagate.append(clause[ownIndex])
                         break
                 # if no literal can be watched clause is unit
                 else:
-                    statUP += 1
-                    assignments.setLiteral(otherLiteral, decisionLevel, clause)
-                    literalsToPropagate.append(literal) # propagate over other literal first
-                    literalsToPropagate.append(otherLiteral)
-                    break
+                    # both literals are falsified -> conflict
+                    if -otherLiteral in assignments:
+                        statConflicts += 1
+                        return clause
+                    else:
+                        statUP += 1
+                        assignments.setLiteral(otherLiteral, decisionLevel, clause)
+                        literalsToPropagate.append(otherLiteral)
             # only one literal -> conflict since literal is falsified
             else:
                 statConflicts += 1
@@ -128,10 +131,10 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
     for literal in conflict:
         level = assignments.getAssignment(literal).level
         if level == decisionLevel:
-            currentLevelLiterals.add(literal)
+            currentLevelLiterals.add(-literal)
         else:
-            previousLevelLiterals.add((literal, level))
-        allLiterals.add(literal)
+            previousLevelLiterals.add((-literal, level))
+        allLiterals.add(-literal)
     
     global optClauseLearning
     if optClauseLearning:
@@ -259,9 +262,6 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
                     
 def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
     
-    # TODO: FRAGEN: wohin genau backtracken wir (anfang oder ende vom vorherigen level)
-    # TODO: FRAGEN: wie genau propagieren wir über die neue gelernte Klausel?
-    
     literalsToKeep = 0
     for i, literal in reversed(list(enumerate(assignments.history))):
         level = assignments.getAssignment(literal).level
@@ -302,8 +302,7 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
     # set literal
     assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
       
-
-def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
+def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
     ogCnfSize = len(cnf)
     numLiterals = getNumLiterals(cnf)
     
@@ -322,7 +321,7 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
         while c_conflict is not None:
             # conflict on decision level means UNSAT
             if decisionLevel == 0:
-                return False, cnf[ogCnfSize:]+[]
+                return False, cnf[ogCnfSize:]+[[]]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
             learnClause(cnf, assignments, lbd, c_learned, decisionLevel)
@@ -345,17 +344,17 @@ if __name__ == "__main__":
 
 
     cnf = cnf_utils.read_cnf(filename)
-    sat, v = CDCL(cnf)
+    sat, res = CDCL(cnf)
 
     if not sat:
         with open("proof.drat", "w") as f:
-            for clause in v:
+            for clause in res:
                 f.write(" ".join(map(str, clause)) + " 0"+ "\n")
 
     statTimeEnd = time.time()
     statPeakMemoryMB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
-    cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
+    cnf_utils.fancy_output("CDCL Solver", sat, res, filename, [
     ("unit propagations", str(statUP)),
     ("decisions", str(statDecision)),
     ("conflicts", str(statConflicts)),

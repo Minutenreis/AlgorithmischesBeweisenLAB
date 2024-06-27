@@ -88,7 +88,7 @@ for i in range(tries):
         timeDratEnd = time.perf_counter()
         if (correctDrat != 0):
             print()
-            print(f"Error: {solver} did not produce a correct proof")
+            print(f"\nError: {solver} did not produce a correct proof")
             sys.exit(1)
         statTimeDrat += timeDratEnd - timeDratStart
     elif (not proof and satSolver == 20):
@@ -96,7 +96,7 @@ for i in range(tries):
         satCadical = subprocess.call(["./Submodules/cadical/build/cadical", cnfFilename], stdout=subprocess.DEVNULL)
         timeCadicalEnd = time.perf_counter()
         if (satCadical == 10):
-            print("Error: Cadical found valid assignment while {solver} did not")
+            print(f"\nError: Cadical found valid assignment while {solver} did not")
             sys.exit(1)
         statTimeCadical += timeCadicalEnd - timeCadicalStart
     else:
@@ -104,7 +104,7 @@ for i in range(tries):
         checkTruthyness = subprocess.call(["python3.12","checkTruthyness.py", cnfFilename , solver1Output], stdout=subprocess.DEVNULL)
         timeCheckTruthynessEnd = time.perf_counter()
         if (checkTruthyness != 0):
-            print("Error: {solver} did not output valid assignment")
+            print(f"\nError: {solver} did not output valid assignment")
             sys.exit(1)
         statTimeTruthcheck += timeCheckTruthynessEnd - timeCheckTruthynessStart
 
