@@ -253,7 +253,7 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
                     lbd[i] = lbd[-1]
                     lbd.pop()
             lbdLimit *= lbdFactor
-            return 0
+        return 0
             
     return decisionLevel  
                     

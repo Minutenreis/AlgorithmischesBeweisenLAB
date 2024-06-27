@@ -33,7 +33,7 @@ class TestCDCL(unittest.TestCase):
         CDCL.numRandomDecision = 1
         CDCL.decide(assignments, 1)
         self.assertTrue(assignments.getAssignment(2).set or assignments.getAssignment(3).set)
-        self.assertTrue(not (assignments.getAssignment(2).set and assignments.getAssignment(3).set))
+        self.assertFalse(assignments.getAssignment(2).set and assignments.getAssignment(3).set)
         
     def test_propagate(self):
         pass
@@ -42,15 +42,55 @@ class TestCDCL(unittest.TestCase):
         pass
     
     def test_backtrack(self):
-        pass
+        assignments = gen_assignments()
+        assignments.setLiteral(1, 0, [1])
+        assignments.setLiteral(2, 1, [-1,2])
+        assignments.setLiteral(3, 1, [1,2,3])
+        CDCL.backtrack(assignments, 0)
+        self.assertTrue(assignments.getAssignment(1).set)
+        self.assertFalse(assignments.getAssignment(2).set)
+        self.assertFalse(assignments.getAssignment(3).set)
+        self.assertEqual(assignments.history, [1])
     
     def test_luby(self):
         self.assertEqual(CDCL.luby(1), 1)
         self.assertEqual(CDCL.luby(2), 1)
         self.assertEqual(CDCL.luby(3), 2)
+        self.assertEqual(CDCL.luby(4), 1)
     
-    def test_restart(self):
-        pass
+    def test_shouldNotRestart(self):
+        CDCL.statConflicts = 0
+        CDCL.oldStatConflicts = 0
+        CDCL.statRestarts = 0
+        cnf = [[1, 2, 3], [-1, 2, 3], [1, -2, 3]]
+        assignments = gen_assignments()
+        assignments.setLiteral(1, 0, [1])
+        assignments.setLiteral(2, 1, [-1,2])
+        assignments.setLiteral(3, 1, [1,2,3])
+        newLevel = CDCL.applyRestartPolicy(assignments, cnf, [0,0,0], 3, 1)
+        self.assertEqual(newLevel, 1)
+        self.assertEqual(assignments.history, [1,2,3])
+        self.assertTrue(assignments.getAssignment(1).set)
+        self.assertTrue(assignments.getAssignment(2).set)
+        self.assertTrue(assignments.getAssignment(3).set)
+        self.assertEqual(CDCL.statRestarts, 0)
+    
+    def test_shouldRestart(self):
+        CDCL.statConflicts = 1000
+        CDCL.oldStatConflicts = 0
+        CDCL.statRestarts = 0
+        cnf = [[1, 2, 3], [-1, 2, 3], [1, -2, 3]]
+        assignments = gen_assignments()
+        assignments.setLiteral(1, 0, [1])
+        assignments.setLiteral(2, 1, [-1,2])
+        assignments.setLiteral(3, 1, [1,2,3])
+        newLevel = CDCL.applyRestartPolicy(assignments, cnf, [0,0,0], 3, 1)
+        self.assertEqual(newLevel, 0)
+        self.assertTrue(assignments.getAssignment(1).set)
+        self.assertFalse(assignments.getAssignment(2).set)
+        self.assertFalse(assignments.getAssignment(3).set)
+        self.assertEqual(assignments.history, [1])
+        self.assertEqual(CDCL.statRestarts, 1)  
     
     def test_learnAndPropagate(self):
         pass
@@ -64,9 +104,9 @@ class TestAssignment(unittest.TestCase):
         self.assertEqual(assignments.getAssignment(1).getWatchedReverse(1), [1])
         self.assertEqual(assignments.getAssignment(2).getWatchedReverse(2), [2])
         self.assertEqual(assignments.getAssignment(3).getWatchedReverse(3), [])
-        self.assertEqual(assignments.getAssignment(1).set, False)
-        self.assertEqual(assignments.getAssignment(2).set, False)
-        self.assertEqual(assignments.getAssignment(3).set, False)  
+        self.assertFalse(assignments.getAssignment(1).set)
+        self.assertFalse(assignments.getAssignment(2).set)
+        self.assertFalse(assignments.getAssignment(3).set)  
         self.assertEqual(assignments.getAssignment(1).polarity, -1)
         self.assertEqual(assignments.getAssignment(2).polarity, -2)
         self.assertEqual(assignments.getAssignment(3).polarity, -3)
@@ -92,11 +132,11 @@ class TestAssignment(unittest.TestCase):
     
     def test_contains(self):
         assignment = gen_assignments()
-        self.assertTrue(1 not in assignment)
-        self.assertTrue(-1 not in assignment)
+        self.assertFalse(1 in assignment)
+        self.assertFalse(-1 in assignment)
         assignment.setLiteral(1,0,[1])
         self.assertTrue(1 in assignment)
-        self.assertTrue(-1 not in assignment)
+        self.assertFalse(-1 in assignment)
     
     def test_setLiteral(self):
         assignment = gen_assignments()
@@ -104,7 +144,7 @@ class TestAssignment(unittest.TestCase):
         assignment.setLiteral(2, 1, [1,2,-3])
         self.assertTrue(assignment.getAssignment(1).set)
         self.assertTrue(assignment.getAssignment(2).set)
-        self.assertTrue(not assignment.getAssignment(3).set)
+        self.assertFalse(assignment.getAssignment(3).set)
         self.assertTrue(1 in assignment)
         self.assertTrue(2 in assignment)
         self.assertEqual(assignment.getAssignment(1).level, 0)
