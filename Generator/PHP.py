@@ -18,18 +18,18 @@ clauses = []
 
 # jede Taube muss in mind. einem Nest sein
 
-for i in range(1, n+2):
+for i in range(n+1):
     clause = []
-    for j in range(1, n+1):
-        clause.append(i*n+j)
+    for j in range(n):
+        clause.append(i*(n+1)+j+1)
     clauses.append(clause)
 
 # keine 2 Tauben in einem Nest
 
-for i1 in range(1, n+2):
-    for i2 in range(i1+1, n+2):
-        for j in range(1, n+1):
-            clauses.append([-(i1*n+j), -(i2*n+j)])
+for i1 in range(0, n+1):
+    for i2 in range(i1+1, n+1):
+        for j in range(0, n):
+            clauses.append([-(i1*(n+1)+j+1), -(i2*(n+1)+j+1)])
 
 # write to file
 with open(filename, "w") as f:

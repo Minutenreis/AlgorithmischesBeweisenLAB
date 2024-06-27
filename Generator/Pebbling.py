@@ -41,7 +41,8 @@ for v in range(n,numLiterals):
             clauses.append([-(v-previousLineLength+a*numLiterals+1), -(v-previousLineLength+1+b*numLiterals+1), v+1,v+numLiterals+1])
 
 # final node may not have a stone
-clauses.append([-numLiterals, -numLiterals*2])
+clauses.append([-numLiterals])
+clauses.append([-numLiterals*2])
 
 # write to file
 with open(filename, "w") as f:

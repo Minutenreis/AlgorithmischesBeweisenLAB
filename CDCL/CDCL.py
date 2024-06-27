@@ -182,7 +182,7 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
     uip1 = currentLevelLiterals.pop()
     
     # create learned clause
-    learnedClause = [uip1] + [-literal for literal, _ in previousLevelLiterals]      
+    learnedClause = [-uip1] + [-literal for literal, _ in previousLevelLiterals]      
             
     # next decision level = highest level of previous decision levels
     newDecisionLevel = max([level for _, level in previousLevelLiterals], default=0)
