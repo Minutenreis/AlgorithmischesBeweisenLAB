@@ -50,7 +50,6 @@ def decide(assignments: Assignments, decisionLevel: int) -> None:
                 return
     
     global numRandomDecision
-    global numRandomDecision
     global k
     if numRandomDecision * k < statConflicts:
         numRandomDecision += 1
@@ -231,7 +230,7 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
     if conflictsSinceLastRestart > c_luby * luby(statRestarts + 1):
         statRestarts += 1
         oldStatConflicts = statConflicts
-        assignments.restart()
+        backtrack(assignments, 0)
         # delete learned clauses
         global optClauseDeletion
         if optClauseDeletion:
@@ -246,7 +245,7 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
                     clauseToSwap = cnf[-1]
                     # remove clause from watched list (swap with last clause, then delete)
                     for literal in clauseToDelete[:2]:
-                        assignments.getAssignment(literal).removeClause(i)
+                        assignments.getAssignment(literal).removeWatched(i,literal)
                     for literal in clauseToSwap[:2]:
                         assignments.getAssignment(literal).changeClause(len(cnf) - 1, i)
                     cnf[i] = cnf[-1]
@@ -349,30 +348,32 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal]]:
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history
 
-if len(sys.argv) == 2:
-    filename = sys.argv[1]
-elif len(sys.argv) == 1:
-    from pathlib import Path
-    filename = str(Path(__file__).parent.parent.joinpath("randomCnf.cnf"))
-else:
-    print("Usage: python CDCL.py filename")
-    print("filename: path to the cnf file")
-    sys.exit(1)
+if __name__ == "__main__":
+
+    if len(sys.argv) == 2:
+        filename = sys.argv[1]
+    elif len(sys.argv) == 1:
+        from pathlib import Path
+        filename = str(Path(__file__).parent.parent.joinpath("randomCnf.cnf"))
+    else:
+        print("Usage: python CDCL.py filename")
+        print("filename: path to the cnf file")
+        sys.exit(1)
     
 
 
-cnf = cnf_utils.read_cnf(filename)
-sat, v = CDCL(cnf)
+    cnf = cnf_utils.read_cnf(filename)
+    sat, v = CDCL(cnf)
 
-if not sat:
-    with open("proof.drat", "w") as f:
-        for clause in v:
-            f.write(" ".join(map(str, clause)) + " 0"+ "\n")
+    if not sat:
+        with open("proof.drat", "w") as f:
+            for clause in v:
+                f.write(" ".join(map(str, clause)) + " 0"+ "\n")
 
-statTimeEnd = time.time()
-statPeakMemoryMB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    statTimeEnd = time.time()
+    statPeakMemoryMB = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
-cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
+    cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
     ("unit propagations", str(statUP)),
     ("decisions", str(statDecision)),
     ("conflicts", str(statConflicts)),
@@ -382,4 +383,4 @@ cnf_utils.fancy_output("CDCL Solver", sat, v, filename, [
     ("num Restarts", str(statRestarts)),
     ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
     ("time", str(statTimeEnd - statTimeStart)+" s")
-])
+    ])

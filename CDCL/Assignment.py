@@ -38,11 +38,6 @@ class Assignment:
     def getWatchedReverse(self, literal: Literal) -> list[int]:
         return self.getWatched(-literal)
     
-    # removes clause with index clauseIndex from watched list
-    def removeClause(self, clauseIndex: int) -> None:
-        self.watchedWithLiteral = [c for c in self.watchedWithLiteral if c != clauseIndex]
-        self.watchedWithNegLiteral = [c for c in self.watchedWithNegLiteral if c != clauseIndex]
-    
     # changes clause index from oldIndex to newIndex
     def changeClause(self, oldIndex: int, newIndex: int) -> None:
         self.watchedWithLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithLiteral]
@@ -53,7 +48,7 @@ class Assignments:
         # order in which the variables are assigned
         self.history: list[Literal] = []
         # list of all assignments
-        self.assignments: list[Assignment] = [Assignment(i) for i in range(numLiterals + 1)]
+        self.assignments: list[Assignment] = [Assignment(i+1) for i in range(numLiterals)]
         for i, clause in enumerate(cnf):
             for j in range(2):
                 if len(clause) > j:
@@ -61,7 +56,7 @@ class Assignments:
 
     # returns the assignment of a literal
     def getAssignment(self, literal: Literal) -> Assignment:
-        return self.assignments[abs(literal)]
+        return self.assignments[abs(literal)-1]
     
     # literal in Assignment iff literal is assigned and polarity is the same
     def __contains__(self, literal: Literal) -> bool:
@@ -79,8 +74,3 @@ class Assignments:
                 continue
             # add -literal to parents -> x1 ∨ x2 ∨ x3 <=> -x1 ∧ -x2 -> x3
             self.getAssignment(literal).parents.append(-lit)
-    
-    def restart(self) -> None:
-        self.history = []
-        for assignment in self.assignments:
-            assignment.set = False
