@@ -90,6 +90,8 @@ filename: path to the cnf file
 it outputs to stdout in CaDiCaL style
 A proof is generated in the file `proof.drat`
 
+CDCL also has unittests which can be run with `python3.12 CDCL/test_cdcl.py`
+
 ## Other
 
 There are some convenience methods included.

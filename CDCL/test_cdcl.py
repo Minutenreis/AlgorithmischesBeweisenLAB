@@ -36,7 +36,15 @@ class TestCDCL(unittest.TestCase):
         self.assertFalse(assignments.getAssignment(2).set and assignments.getAssignment(3).set)
         
     def test_propagate(self):
-        pass
+        # propagate bei -1 tauscht in erster Klausel 1 und 3
+        cnf = [[3, 2, 1], [-1, 2, 3], [1, -2, 3]]
+        assignments = gen_assignments()
+        assignments.setLiteral(-1, 0, [-1])
+        assignments.setLiteral(-2, 1, [-2])
+        c_conflict = CDCL.propagate(cnf,assignments, 1)
+        self.assertTrue(c_conflict is None)
+        self.assertTrue(assignments.getAssignment(3).set)
+        self.assertEqual(cnf[0], [3,2,1])
     
     def test_analyzeConflict(self):
         pass
