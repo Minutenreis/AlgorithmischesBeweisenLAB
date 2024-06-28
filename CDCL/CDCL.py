@@ -49,16 +49,16 @@ def decide(assignments: Assignments, decisionLevel: int) -> None:
                 assignments.setLiteral(assignment.polarity, decisionLevel, [])
                 return
     
-    global numRandomDecision
-    global k
-    if numRandomDecision * k < statConflicts:
-        numRandomDecision += 1
+    # global numRandomDecision
+    # global k
+    # if numRandomDecision * k < statConflicts:
+    #     numRandomDecision += 1
         
-        # choose random literal
-        allUnsetAssignments = [assignment for assignment in assignments.assignments if not assignment.set]
-        assignment = random.choice(allUnsetAssignments)
-        assignments.setLiteral(assignment.polarity, decisionLevel, [])
-        return
+    #     # choose random literal
+    #     allUnsetAssignments = [assignment for assignment in assignments.assignments if not assignment.set]
+    #     assignment = random.choice(allUnsetAssignments)
+    #     assignments.setLiteral(assignment.polarity, decisionLevel, [])
+    #     return
 
     max = 0
     maxAssignment = None
@@ -102,11 +102,20 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                         assignments.getAssignment(clause[ownIndex]).addWatched(clauseIndex, clause[ownIndex])
                         # possible UP
                         if -otherLiteral in assignments and clause[ownIndex] not in assignments:
-                            statUP += 1
-                            assignments.setLiteral(clause[ownIndex], decisionLevel, clause)
-                            literalsToPropagate.append(clause[ownIndex])
+                            # look if otherLiteral can also be exchanged with watchable literal
+                            for j in range(i+1, len(clause)):
+                                if -clause[j] not in assignments:
+                                    clause[otherLiteralInd], clause[j] = clause[j], clause[otherLiteralInd]
+                                    assignments.getAssignment(otherLiteral).removeWatched(clauseIndex, -otherLiteral)
+                                    assignments.getAssignment(clause[otherLiteralInd]).addWatched(clauseIndex, clause[otherLiteralInd])
+                                    break
+                            else:
+                                # no other watchable literal -> UP
+                                statUP += 1
+                                assignments.setLiteral(clause[ownIndex], decisionLevel, clause)
+                                literalsToPropagate.append(clause[ownIndex])
                         break
-                # if no literal can be watched clause is unit
+                # if no literal can be watched clause is unit or conflict
                 else:
                     # both literals are falsified -> conflict
                     if -otherLiteral in assignments:
