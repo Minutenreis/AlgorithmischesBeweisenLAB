@@ -76,15 +76,15 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
     literalsToPropagate = [assignments.history[-1]]
     
     while len(literalsToPropagate) > 0:
-        literal = literalsToPropagate.pop()
         # all clauses with literal fulfill the invariant
         # all clauses with -literal possibly violate the invariant
-        watchedClausesIndices = assignments.getAssignment(literal).getWatchedReverse(literal)
+        literal = -literalsToPropagate.pop()
+        watchedClausesIndices = assignments.getAssignment(literal).getWatched(literal)
         for clauseIndex in watchedClausesIndices:
             clause = cnf[clauseIndex]
             
             if len(clause) >= 2:
-                ownIndex = 0 if clause[0] == -literal else 1
+                ownIndex = 0 if clause[0] == literal else 1
                 otherLiteralInd = 1 - ownIndex
                 otherLiteral = clause[otherLiteralInd]
                 
@@ -98,7 +98,7 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                     if -clause[i] not in assignments:
                         # swap literals
                         clause[ownIndex], clause[i] = clause[i], clause[ownIndex]
-                        assignments.getAssignment(literal).removeWatched(clauseIndex, -literal)
+                        assignments.getAssignment(literal).removeWatched(clauseIndex, literal)
                         assignments.getAssignment(clause[ownIndex]).addWatched(clauseIndex, clause[ownIndex])
                         # possible UP
                         if -otherLiteral in assignments and clause[ownIndex] not in assignments:
@@ -106,7 +106,7 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                             for j in range(i+1, len(clause)):
                                 if -clause[j] not in assignments:
                                     clause[otherLiteralInd], clause[j] = clause[j], clause[otherLiteralInd]
-                                    assignments.getAssignment(otherLiteral).removeWatched(clauseIndex, -otherLiteral)
+                                    assignments.getAssignment(otherLiteral).removeWatched(clauseIndex, otherLiteral)
                                     assignments.getAssignment(clause[otherLiteralInd]).addWatched(clauseIndex, clause[otherLiteralInd])
                                     break
                             else:
@@ -300,7 +300,10 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
             # swap literals
             c_learned[0], c_learned[i] = c_learned[i], c_learned[0]
             break
-        
+    
+    # sort other literals by index in history (so that backtracking will watch correct literals)
+    c_learned[1:] = sorted(c_learned[1:], key=lambda x: assignments.history.index(-x), reverse=True)
+    
     # set watched literals
     for literal in c_learned[:2]:
         assignments.getAssignment(literal).addWatched(len(cnf) - 1, literal)

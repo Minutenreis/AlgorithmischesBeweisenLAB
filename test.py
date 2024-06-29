@@ -78,9 +78,13 @@ for i in range(tries):
     timeGenEnd = time.perf_counter()
     
     timeSolverStart = time.perf_counter()
-    satSolver = subprocess.call(["python3.12",solver, "randomCnf.cnf"],stdout=file)
+    satSolver = subprocess.call(["python3.12",solver, cnfFilename],stdout=file)
     # satSolver = subprocess.call(["./Submodules/cadical/build/cadical", cnfFilename, "proof.drat"],stdout=file)
     timeSolverEnd = time.perf_counter()
+    
+    if (satSolver != 10 and satSolver != 20):
+        print(f"\nError: {solver} did not output valid result")
+        sys.exit(1)
     
     if (proof and satSolver == 20):
         timeDratStart = time.perf_counter()
