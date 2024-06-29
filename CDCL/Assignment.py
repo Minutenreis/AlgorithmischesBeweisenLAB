@@ -14,18 +14,15 @@ class Assignment:
         self.watchedWithNegLiteral: list[int] = [] # list[ClauseIndex]
     
     # outputs watched list of literal
-    def getWatched(self, literal: Literal) -> list[int]:
-        if literal > 0:
+    def getWatched(self, polarity: Literal) -> list[int]:
+        if polarity > 0:
             return self.watchedWithLiteral
         else:
             return self.watchedWithNegLiteral
         
     # adds clauseIndex to watched list of literal
     def addWatched(self, clauseIndex: int, polarity: Literal) -> None:
-        if polarity > 0:
-            self.watchedWithLiteral.append(clauseIndex)
-        else:
-            self.watchedWithNegLiteral.append(clauseIndex)
+        self.getWatched(polarity).append(clauseIndex)
     
     # remove clauseIndex from watched list of literal
     def removeWatched(self, clauseIndex: int, polarity: Literal) -> None:
@@ -33,10 +30,6 @@ class Assignment:
             self.watchedWithLiteral = [c for c in self.watchedWithLiteral if c != clauseIndex]
         else:
             self.watchedWithNegLiteral = [c for c in self.watchedWithNegLiteral if c != clauseIndex]
-    
-    # outputs watched list of opposite polarity of literal
-    def getWatchedReverse(self, literal: Literal) -> list[int]:
-        return self.getWatched(-literal)
     
     # changes clause index from oldIndex to newIndex
     def changeClause(self, oldIndex: int, newIndex: int, polarity: Literal) -> None:

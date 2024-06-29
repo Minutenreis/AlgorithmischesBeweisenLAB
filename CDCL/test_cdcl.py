@@ -126,7 +126,7 @@ class TestCDCL(unittest.TestCase):
         self.assertEqual(lbd[3], 2)
         self.assertEqual(assignments.getAssignment(2).set, True)
         self.assertTrue(assignments.getAssignment(2).getWatched(2), [0,1,3])
-        self.assertTrue(assignments.getAssignment(1).getWatchedReverse(1), [1,3])
+        self.assertTrue(assignments.getAssignment(1).getWatched(-1), [1,3])
         
 
 class TestAssignment(unittest.TestCase):
@@ -135,9 +135,9 @@ class TestAssignment(unittest.TestCase):
         self.assertEqual(assignments.getAssignment(1).getWatched(1), [0, 2])
         self.assertEqual(assignments.getAssignment(2).getWatched(2), [0, 1])
         self.assertEqual(assignments.getAssignment(3).getWatched(3), [])
-        self.assertEqual(assignments.getAssignment(1).getWatchedReverse(1), [1])
-        self.assertEqual(assignments.getAssignment(2).getWatchedReverse(2), [2])
-        self.assertEqual(assignments.getAssignment(3).getWatchedReverse(3), [])
+        self.assertEqual(assignments.getAssignment(1).getWatched(-1), [1])
+        self.assertEqual(assignments.getAssignment(2).getWatched(-2), [2])
+        self.assertEqual(assignments.getAssignment(3).getWatched(-3), [])
         self.assertFalse(assignments.getAssignment(1).set)
         self.assertFalse(assignments.getAssignment(2).set)
         self.assertFalse(assignments.getAssignment(3).set)  
