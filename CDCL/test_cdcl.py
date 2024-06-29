@@ -59,7 +59,26 @@ class TestCDCL(unittest.TestCase):
         self.assertIs(c_conflict, None)
     
     def test_analyzeConflict(self):
-        pass
+        assignments = Assignment.Assignments(4, [])
+        assignments.setLiteral(1,1,[1])
+        assignments.setLiteral(2,2,[2])
+        assignments.setLiteral(3,2,[3,-2,-1])
+        assignments.setLiteral(4,2,[4,-2])
+        conflict = [-4,-3]
+        c_learned, decisionLevel = CDCL.analyzeConflict(assignments, conflict,2)
+        self.assertEqual(c_learned, [-2,-1])
+        self.assertEqual(decisionLevel, 1)
+
+    def test_analyzeConflictCurrentLevelOnly(self):
+        assignments = Assignment.Assignments(4, [])
+        assignments.setLiteral(1,1,[1])
+        assignments.setLiteral(2,2,[2])
+        assignments.setLiteral(3,2,[3,-2])
+        assignments.setLiteral(4,2,[4,-2])
+        conflict = [-4,-3]
+        c_learned, decisionLevel = CDCL.analyzeConflict(assignments, conflict,2)
+        self.assertEqual(c_learned, [-2])
+        self.assertEqual(decisionLevel, 0)
     
     def test_backtrack(self):
         assignments = gen_assignments()
@@ -119,7 +138,7 @@ class TestCDCL(unittest.TestCase):
         assignments.setLiteral(1, 0, [1])
         assignments.setLiteral(2, 1, [-1,2])
         assignments.getAssignment(2).set = False
-        CDCL.learnClause(cnf, assignments, lbd,[-1,2],0)
+        CDCL.learnClause(cnf, assignments, lbd,[-1,2],0,[])
         self.assertEqual(len(cnf), 4)
         self.assertEqual(len(lbd), 4)
         self.assertEqual(cnf[3], [2,-1])
@@ -157,11 +176,11 @@ class TestAssignment(unittest.TestCase):
         assignments.getAssignment(1).removeWatched(0, 1)
         self.assertEqual(assignments.getAssignment(1).getWatched(1), [2])
         assignments.getAssignment(1).removeWatched(1, -1)
-        self.assertEqual(assignments.getAssignment(1).getWatchedReverse(1), [])
+        self.assertEqual(assignments.getAssignment(1).getWatched(-1), [])
     
     def test_changeClause(self):
         assignments = gen_assignments()
-        assignments.getAssignment(1).changeClause(0, 1)
+        assignments.getAssignment(1).changeClause(0, 1, 1)
         self.assertEqual(assignments.getAssignment(1).getWatched(1), [1, 2])
     
     def test_contains(self):
