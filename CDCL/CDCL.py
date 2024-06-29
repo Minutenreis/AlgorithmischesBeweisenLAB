@@ -259,7 +259,7 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
                     for literal in clauseToDelete[:2]:
                         assignments.getAssignment(literal).removeWatched(i,literal)
                     for literal in clauseToSwap[:2]:
-                        assignments.getAssignment(literal).changeClause(len(cnf) - 1, i)
+                        assignments.getAssignment(literal).changeClause(len(cnf) - 1, i, literal)
                     cnf[i] = cnf[-1]
                     cnf.pop()
                     lbd[i] = lbd[-1]
@@ -284,12 +284,13 @@ def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
         assignments.getAssignment(literal).set = False
     assignments.history = assignments.history[:literalsToKeep]
 
-def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int) -> None:
+def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int, proofCnf: CNF) -> None:
     global statLearnedClauses
     statLearnedClauses += 1
     
     # add clause to cnf
     cnf.append(c_learned)
+    proofCnf.append(c_learned)
     
     global statUP
     statUP += 1
@@ -317,6 +318,7 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
 def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
     ogCnfSize = len(cnf)
     numLiterals = getNumLiterals(cnf)
+    proofCnf = cnf.copy()
     
     # assignment of variables (0th index is not used)
     assignments = Assignments(numLiterals, cnf)
@@ -333,10 +335,10 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
         while c_conflict is not None:
             # conflict on decision level means UNSAT
             if decisionLevel == 0:
-                return False, cnf[ogCnfSize:]+[[]]
+                return False, proofCnf[ogCnfSize:]+[[]]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
-            learnClause(cnf, assignments, lbd, c_learned, decisionLevel)
+            learnClause(cnf, assignments, lbd, c_learned, decisionLevel, proofCnf)
             c_conflict = propagate(cnf, assignments, decisionLevel)
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history

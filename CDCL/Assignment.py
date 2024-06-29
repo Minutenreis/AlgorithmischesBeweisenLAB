@@ -39,9 +39,11 @@ class Assignment:
         return self.getWatched(-literal)
     
     # changes clause index from oldIndex to newIndex
-    def changeClause(self, oldIndex: int, newIndex: int) -> None:
-        self.watchedWithLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithLiteral]
-        self.watchedWithNegLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithNegLiteral]
+    def changeClause(self, oldIndex: int, newIndex: int, polarity: Literal) -> None:
+        if polarity > 0:
+            self.watchedWithLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithLiteral]
+        else:
+            self.watchedWithNegLiteral = [newIndex if c == oldIndex else c for c in self.watchedWithNegLiteral]
     
 class Assignments:
     def __init__(self, numLiterals: int, cnf: CNF):
