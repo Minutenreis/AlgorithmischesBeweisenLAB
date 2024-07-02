@@ -6,12 +6,11 @@ import resource
 import random
 import math
 
-# TODO: Fix and write unit tests for CDCL
-
 optRestarts = True # if True, restarts are enabled, otherwise disabled
 optVSIDS = True # if True, VSIDS are taken into account, otherwise not
 optClauseLearning = True # if True, clause learning includes 1UIP, otherwise only decision literals
 optClauseDeletion = True # if True, learned clauses are deleted, otherwise not
+optClauseMinimization = False # if True, learned clauses are minimized, otherwise not
 
 type Literal = int
 type Clause = list[Literal]
@@ -49,16 +48,16 @@ def decide(assignments: Assignments, decisionLevel: int) -> None:
                 assignments.setLiteral(assignment.polarity, decisionLevel, [])
                 return
     
-    # global numRandomDecision
-    # global k
-    # if numRandomDecision * k < statConflicts:
-    #     numRandomDecision += 1
+    global numRandomDecision
+    global k
+    if numRandomDecision * k < statConflicts:
+        numRandomDecision += 1
         
-    #     # choose random literal
-    #     allUnsetAssignments = [assignment for assignment in assignments.assignments if not assignment.set]
-    #     assignment = random.choice(allUnsetAssignments)
-    #     assignments.setLiteral(assignment.polarity, decisionLevel, [])
-    #     return
+        # choose random literal
+        allUnsetAssignments = [assignment for assignment in assignments.assignments if not assignment.set]
+        assignment = random.choice(allUnsetAssignments)
+        assignments.setLiteral(assignment.polarity, decisionLevel, [])
+        return
 
     max = 0
     maxAssignment = None
@@ -214,8 +213,6 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
                 assignment.VSIDS /= b
             b = 1
     
-    # todo: klauselminimierung
-    
     global statMaxLengthLearnedClause
     global statLearnedClauses
     statLearnedClauses += 1
@@ -227,6 +224,21 @@ def luby(i: int) -> int:
     if i == 2**k-1:
         return 2**(k-1)
     return luby(i-2**(k-1)+1)
+
+def deleteClause(cnf: CNF, assignments: Assignments, lbd: list[float], i: int) -> None:
+    global statDeletedClauses
+    statDeletedClauses += 1
+    clauseToDelete = cnf[i]
+    clauseToSwap = cnf[-1]
+    # remove clause from watched list (swap with last clause, then delete)
+    for literal in clauseToDelete[:2]:
+        assignments.getAssignment(literal).removeWatched(i,literal)
+    for literal in clauseToSwap[:2]:
+        assignments.getAssignment(literal).changeClause(len(cnf) - 1, i, literal)
+    cnf[i] = cnf[-1]
+    cnf.pop()
+    lbd[i] = lbd[-1]
+    lbd.pop()
 
 def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogCnfLength: int, decisionLevel: int) -> int:
     if not optRestarts:
@@ -248,22 +260,10 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
         if optClauseDeletion:
             global lbdLimit
             global lbdFactor
-            global statDeletedClauses
             for i in range(len(cnf) - 1, ogCnfLength - 1, -1):
                 # delete clause by swapping it with last clause and then deleting the last clause
                 if lbd[i] > lbdLimit:
-                    statDeletedClauses += 1
-                    clauseToDelete = cnf[i]
-                    clauseToSwap = cnf[-1]
-                    # remove clause from watched list (swap with last clause, then delete)
-                    for literal in clauseToDelete[:2]:
-                        assignments.getAssignment(literal).removeWatched(i,literal)
-                    for literal in clauseToSwap[:2]:
-                        assignments.getAssignment(literal).changeClause(len(cnf) - 1, i, literal)
-                    cnf[i] = cnf[-1]
-                    cnf.pop()
-                    lbd[i] = lbd[-1]
-                    lbd.pop()
+                    deleteClause(cnf, assignments, lbd, i)
             lbdLimit *= lbdFactor
         return 0
             
@@ -284,7 +284,7 @@ def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
         assignments.getAssignment(literal).set = False
     assignments.history = assignments.history[:literalsToKeep]
 
-def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int, proofCnf: CNF) -> None:
+def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int, proofCnf: CNF, ogCnfSize: int) -> None:
     global statLearnedClauses
     statLearnedClauses += 1
     
@@ -311,7 +311,16 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
         
     # calculate LBD
     lbd.append(len(set([assignments.getAssignment(literal).level for literal in c_learned])))
-
+    
+    # clause minimazation
+    global optClauseMinimization
+    if optClauseMinimization:
+        # len(cnf) - 1 is the learned clause
+        for i in range(len(cnf) - 2, ogCnfSize-1, -1):
+            clause = cnf[i]
+            # clause is redundant, if c_learned is a subset of clause
+            if all([literal in clause for literal in c_learned]):
+                deleteClause(cnf, assignments, lbd, i)
     # set literal
     assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
       
@@ -338,7 +347,7 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
                 return False, proofCnf[ogCnfSize:]+[[]]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
-            learnClause(cnf, assignments, lbd, c_learned, decisionLevel, proofCnf)
+            learnClause(cnf, assignments, lbd, c_learned, decisionLevel, proofCnf, ogCnfSize)
             c_conflict = propagate(cnf, assignments, decisionLevel)
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history
