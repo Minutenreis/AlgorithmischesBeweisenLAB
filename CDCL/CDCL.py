@@ -10,7 +10,7 @@ optRestarts = True # if True, restarts are enabled, otherwise disabled
 optVSIDS = True # if True, VSIDS are taken into account, otherwise not
 optClauseLearning = True # if True, clause learning includes 1UIP, otherwise only decision literals
 optClauseDeletion = True # if True, learned clauses are deleted, otherwise not
-optClauseMinimization = False # if True, learned clauses are minimized, otherwise not
+optClauseMinimization = True # if True, learned clauses are minimized, otherwise not
 
 type Literal = int
 type Clause = list[Literal]
@@ -321,7 +321,7 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
         for i in range(len(cnf) - 2, ogCnfSize-1, -1):
             clause = cnf[i]
             # clause is redundant, if c_learned is a subset of clause
-            if all([literal in clause for literal in c_learned]):
+            if len(clause) > len(c_learned) and all([literal in clause for literal in c_learned]):
                 statClauseMinimalization += 1
                 deleteClause(cnf, assignments, lbd, i)
     # set literal
