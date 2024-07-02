@@ -146,6 +146,20 @@ class TestCDCL(unittest.TestCase):
         self.assertEqual(assignments.getAssignment(2).set, True)
         self.assertTrue(assignments.getAssignment(2).getWatched(2), [0,1,3])
         self.assertTrue(assignments.getAssignment(1).getWatched(-1), [1,3])
+    
+    def test_minimizeClause(self):
+        cnf = [[1, 2, 3], [-1, 2, 3], [1, -2, 3]]
+        assignments = gen_assignments()
+        assignments.setLiteral(1, 1, [1])
+        assignments.setLiteral(2, 1, [-1,2])
+        assignments.setLiteral(3, 2, [-1,-2,3])
+        assignments.getAssignment(3).set = False
+        assignments.history.pop()
+        c_learned = [-1,-2,-3]
+        CDCL.sortClause(c_learned, assignments)
+        self.assertEqual(c_learned, [-3,-2,-1])
+        CDCL.minimizeClause(c_learned,assignments)
+        self.assertEqual(c_learned, [-3,-1])
         
 
 class TestAssignment(unittest.TestCase):

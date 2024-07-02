@@ -92,6 +92,9 @@ A proof is generated in the file `proof.drat`
 
 CDCL also has unittests which can be run with `python3.12 CDCL/test_cdcl.py`
 
+Note regarding excessive comments: 
+All functions are commented with """ """, the others are mostly written so I can understand the program myself.
+
 ## Other
 
 There are some convenience methods included.

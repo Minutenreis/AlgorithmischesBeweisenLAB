@@ -10,7 +10,9 @@ statUP = 0
 statDecision = 0
 statPureLiteralRemovedVars = 0
 
-# removes all unit clauses, returns if it changed v
+"""
+removes all unit clauses, returns if it changed v
+"""
 def complete_unit_propagation(cnf: list[list[int]], v: set[int]):
     global statUP
     i = 0
@@ -38,8 +40,10 @@ def complete_unit_propagation(cnf: list[list[int]], v: set[int]):
             continue
         i += 1
     return v
-            
-# removes all literals that only exist in one polarity
+        
+"""
+removes all literals that only exist in one polarity
+"""    
 def pure_literal_elimination(cnf: list[list[int]], v: set[int]):
     if not flagPureLiteralElimination:
         return
@@ -57,6 +61,9 @@ def pure_literal_elimination(cnf: list[list[int]], v: set[int]):
             global statPureLiteralRemovedVars
             statPureLiteralRemovedVars += 1
 
+"""
+returns the first literal that is not yet assigned as they come up in the cnf
+"""
 def get_decision_variable(cnf: list[list[int]], v: set[int]) -> int:
     global statDecision
     statDecision += 1
@@ -66,7 +73,9 @@ def get_decision_variable(cnf: list[list[int]], v: set[int]) -> int:
             if not literal in v and not -literal in v:
                 return literal
 
-# returns 1 if the formula is satisfied, 0 if its not decided and -1 if the formula is unsatisfiable
+"""
+returns 1 if the formula is satisfied, 0 if its not decided and -1 if the formula is unsatisfiable
+"""
 def is_finished(cnf: list[list[int]], v: set[int]) -> bool:
     satisfied = True
     for clause in cnf:
@@ -86,6 +95,12 @@ def is_finished(cnf: list[list[int]], v: set[int]) -> bool:
             satisfied = False
     return 1 if satisfied else 0
 
+"""
+David-Putnam-Logemann-Loveland algorithm
+@input a cnf and current assignment v
+@output (True, v) if the formula is satisfiable, (False, None) if the formula is unsatisfiable
+calls itself recursively
+"""
 def DPLL(cnf: list[list[int]], v: set[int] = set()) -> tuple[bool,set[int]]:
     oldLen = -1
     while oldLen != len(v):
@@ -110,7 +125,10 @@ def DPLL(cnf: list[list[int]], v: set[int] = set()) -> tuple[bool,set[int]]:
     v.add(x)
     return DPLL(cnf, v)
     
-
+"""
+parses argv for filename, reads it in with cnf_utils and runs CDCL
+outputs the result and some statistics
+"""
 if len(sys.argv) != 2:
     print("Usage: python DPLL.py filename")
     print("filename: path to the cnf file")

@@ -6,7 +6,9 @@ statUP = 0
 statDecisions = 0
 statTimeStart = time.time()
 
-# repeat unit propagation until no more unit clauses are found
+"""
+repeat unit propagation until no more unit clauses are found
+"""
 def complete_unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[list[list[int]], list[int]]:
     cnf = cnf_v[0]
     v = cnf_v[1]
@@ -22,7 +24,9 @@ def complete_unit_propagation(cnf_v: tuple[list[list[int]], list[int]]) -> tuple
         i += 1
     return (cnf, v)
 
-# unit_propagation: set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false for all clauses
+"""
+unit_propagation: set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false for all clauses
+"""
 def unit_propagation(cnf_v: tuple[list[list[int]], list[int]], variable: int) -> tuple[list[list[int]], list[int]]:
     global statUP
     statUP += 1
@@ -42,6 +46,7 @@ def unit_propagation(cnf_v: tuple[list[list[int]], list[int]], variable: int) ->
 cnf_v: tuple of cnf and v
 cnf: list of clauses
 v: list of variable assignments
+returns tuple of (satisfiability, variable assignments)
 """
 def SAT_2(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[bool, list[int]]:
     # unit propagation
@@ -65,6 +70,11 @@ def SAT_2(cnf_v: tuple[list[list[int]], list[int]]) -> tuple[bool, list[int]]:
     # try setting variable to True
     return SAT_2(unit_propagation(cnf_v, literal))
 
+
+"""
+parses argv for filename, reads it in with cnf_utils and runs CDCL
+outputs the result, dratProof if UNSAT and some statistics
+"""
 if len(sys.argv) != 2:
     print("Usage: python 2-SAT.py filename")
     sys.exit(1)

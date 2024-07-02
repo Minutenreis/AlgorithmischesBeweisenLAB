@@ -2,6 +2,7 @@ import sys
 import random
 import math
 
+# generate a random CNF formula
 # n: number of variables
 # c: number of clauses
 # k: number of literals per clause
@@ -27,6 +28,7 @@ def random_cnf(n, c, k):
     cnf.sort() # for easier visual comparison
     return cnf
 
+# input params
 if len(sys.argv) < 2 and len(sys.argv) > 5:
     print("Usage: python randomCnf.py n [c] [k] [outputName]")
     print("n: number of variables")
@@ -53,6 +55,7 @@ if c > math.comb(n, k) * 2**k:
     
 clauses = random_cnf(n, c, k)
 
+# write to file
 f = open(filename, "w")
 f.write("p cnf " + str(n) + " " + str(c) + "\n")
 for clause in clauses:

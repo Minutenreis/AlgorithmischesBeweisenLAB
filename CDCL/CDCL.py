@@ -35,9 +35,17 @@ oldStatConflicts = 0
 lbdLimit: float = 10
 lbdFactor: float = 1.1
 
+"""
+returns the number of unique literals in the CNF (+literal, -literal is counted as 1)
+"""
 def getNumLiterals(cnf: CNF) -> int:
     return len(set([abs(l) for c in cnf for l in c]))
 
+"""
+decides the next literal by choosing the literal with the highest VSIDS score
+every k decisions a random literal is chosen instead
+if optVSIDS is False, the first unset literal is chosen (by traversing the list front to back)
+"""
 def decide(assignments: Assignments, decisionLevel: int) -> None:
     global statDecision
     statDecision += 1
@@ -68,7 +76,10 @@ def decide(assignments: Assignments, decisionLevel: int) -> None:
             maxAssignment = assignment
     
     assignments.setLiteral(maxAssignment.polarity, decisionLevel, [])
-
+"""
+applies unit propagation to the latest literal in the history and then recursively for all found literals
+returns None if no conflict is found, otherwise the conflicting clause
+"""
 def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
     global statConflicts
     global statUP
@@ -130,7 +141,12 @@ def propagate(cnf: CNF, assignments: Assignments, decisionLevel: int) -> Clause:
                 statConflicts += 1
                 return clause
     return None
-            
+
+"""
+analyses the conflict and implication graph and generates a learned clause
+the learned clause is either 1UIP if optClauseLearning is True, otherwise the decision literal
+also increments the VSIDS if optVSIDS is True
+"""         
 def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: int) -> tuple[Clause, int]:
     previousLevelLiterals: set[tuple[Literal, int]] = set()
     currentLevelLiterals: set[Literal] = set()
@@ -171,7 +187,7 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
     else:
         # iterate over current level backwards according to history
         for literal in reversed(assignments.history):
-            # first previous level literal -> currentLevelLiteral[0] is decision literal
+            # first previous level literal -> previous is decision literal
             if assignments.getAssignment(literal).level != decisionLevel:
                 break
             
@@ -189,6 +205,8 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
                 allLiterals.add(literal)
 
             currentLevelLiterals.remove(literal)
+            previous = literal
+        currentLevelLiterals.add(previous)
         
     # 1UIP if optClauseLearning is True, otherwise decision literal 
     uip1 = currentLevelLiterals.pop()
@@ -219,13 +237,21 @@ def analyzeConflict(assignments: Assignments, conflict: Clause, decisionLevel: i
     statLearnedClauses += 1
     statMaxLengthLearnedClause = max(statMaxLengthLearnedClause, len(learnedClause))
     return learnedClause, newDecisionLevel
-    
+
+"""
+returns the luby number of i
+1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, 1,...
+"""
 def luby(i: int) -> int:
     k = math.floor(math.log(i,2)) + 1
     if i == 2**k-1:
         return 2**(k-1)
     return luby(i-2**(k-1)+1)
 
+"""
+deletes the ith clause from the CNF by swapping it with the last clause and then deleting the last clause
+updates the watched literals and lbd list accordingly
+"""
 def deleteClause(cnf: CNF, assignments: Assignments, lbd: list[float], i: int) -> None:
     global statDeletedClauses
     statDeletedClauses += 1
@@ -241,6 +267,12 @@ def deleteClause(cnf: CNF, assignments: Assignments, lbd: list[float], i: int) -
     lbd[i] = lbd[-1]
     lbd.pop()
 
+"""
+if optRestart is true this method checks if a restart is necessary (more new conflicts than c_luby * luby(restarts+1)))
+if so, it backtracks to level 0
+if optClauseDeletion is true, it deletes learned clauses with LBD > lbdLimit and multiplies the lbd limit by lbdFactor
+outputs the new decision level (currentLevel if no restart, otherwise 0)
+"""
 def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogCnfLength: int, decisionLevel: int) -> int:
     if not optRestarts:
         return decisionLevel
@@ -269,7 +301,12 @@ def applyRestartPolicy(assignments: Assignments, cnf: CNF, lbd: list[float], ogC
         return 0
             
     return decisionLevel  
-                    
+
+"""
+backtracks to new Decision Level
+unsets all literals with level > newDecisionLevel
+removes unset literals from history
+"""               
 def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
     
     literalsToKeep = 0
@@ -285,9 +322,53 @@ def backtrack(assignments: Assignments, newDecisionLevel: int) -> None:
         assignments.getAssignment(literal).set = False
     assignments.history = assignments.history[:literalsToKeep]
 
-def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int, proofCnf: CNF, ogCnfSize: int) -> None:
+"""
+Sorts the clause by history index (and puts the UIP at the beginning)
+"""
+def sortClause(c_learned: Clause, assignments: Assignments) -> None:
+    # find unset literal
+    for i, literal in enumerate(c_learned):
+        if not assignments.getAssignment(literal).set:
+            # swap literals
+            c_learned[0], c_learned[i] = c_learned[i], c_learned[0]
+            break
+        
+    # sort other literals by index in history (so that backtracking will watch correct literals)
+    c_learned[1:] = sorted(c_learned[1:], key=lambda x: assignments.history.index(-x), reverse=True)
+
+"""
+minimizes the the learned clause with local minimization if optClauseMinimization is True otherwise does nothing
+expects clause[0] to be the UIP
+"""
+def minimizeClause(c_learned: Clause, assignments: Assignments) -> None:
+    global optClauseMinimization
+    if not optClauseMinimization:
+        return
+    
+    global statClauseMinimalization
+    statClauseMinimalization += 1
+    # only local minimization is implemented, read Sörensoson and Biere, Minimizing Learned Clauses 2009
+    # https://cca.informatik.uni-freiburg.de/papers/SoerenssonBiere-SAT09.pdf
+    c_learned_set = set(c_learned)
+    for lit in c_learned[1:]:
+        parents = assignments.getAssignment(lit).parents
+        # if all parents are in the learned clause, the literal is redundant
+        if len(parents) > 0 and all([-parent in c_learned_set for parent in parents]):
+            c_learned.remove(lit)
+
+"""
+learns the clause and adds it to the CNF
+sorts the clause by its decision order (in history)
+watches the first two literals (one of which is sorted to be the UIP)
+also calculates the LBD for the new clause and sets the UIP (since the clauses are asserting)
+also locally minimizes the clause if optClauseMinimization is True
+"""
+def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned: Clause, decisionLevel: int, proofCnf: CNF) -> None:
     global statLearnedClauses
     statLearnedClauses += 1
+    
+    sortClause(c_learned, assignments)
+    minimizeClause(c_learned, assignments)
     
     # add clause to cnf
     cnf.append(c_learned)
@@ -296,16 +377,6 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
     global statUP
     statUP += 1
         
-    # find unset literal
-    for i, literal in enumerate(c_learned):
-        if not assignments.getAssignment(literal).set:
-            # swap literals
-            c_learned[0], c_learned[i] = c_learned[i], c_learned[0]
-            break
-    
-    # sort other literals by index in history (so that backtracking will watch correct literals)
-    c_learned[1:] = sorted(c_learned[1:], key=lambda x: assignments.history.index(-x), reverse=True)
-    
     # set watched literals
     for literal in c_learned[:2]:
         assignments.getAssignment(literal).addWatched(len(cnf) - 1, literal)
@@ -313,20 +384,17 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
     # calculate LBD
     lbd.append(len(set([assignments.getAssignment(literal).level for literal in c_learned])))
     
-    # clause minimazation
-    global optClauseMinimization
-    if optClauseMinimization:
-        global statClauseMinimalization
-        # len(cnf) - 1 is the learned clause
-        for i in range(len(cnf) - 2, ogCnfSize-1, -1):
-            clause = cnf[i]
-            # clause is redundant, if c_learned is a subset of clause
-            if len(clause) > len(c_learned) and all([literal in clause for literal in c_learned]):
-                statClauseMinimalization += 1
-                deleteClause(cnf, assignments, lbd, i)
     # set literal
     assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
-      
+
+"""
+Conflict Driven Clause Learning (CDCL) algorithm
+gets a cnf as input and returns either:
+    - True and the assignment history if the cnf is satisfiable
+    - False and the proof cnf if the cnf is unsatisfiable
+the proof is saved in an extra proofCnf, if one ever runs into memory problems this can instead be written to file instantly
+iterates until either all literals are validly set or a conflict on level 0 is found (which means the cnf is unsatisfiable)
+""" 
 def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
     ogCnfSize = len(cnf)
     numLiterals = getNumLiterals(cnf)
@@ -350,11 +418,15 @@ def CDCL(cnf: CNF) -> tuple[bool, list[Literal] | CNF]:
                 return False, proofCnf[ogCnfSize:]+[[]]
             c_learned, decisionLevel = analyzeConflict(assignments, c_conflict, decisionLevel)
             backtrack(assignments, decisionLevel)
-            learnClause(cnf, assignments, lbd, c_learned, decisionLevel, proofCnf, ogCnfSize)
+            learnClause(cnf, assignments, lbd, c_learned, decisionLevel, proofCnf)
             c_conflict = propagate(cnf, assignments, decisionLevel)
         decisionLevel = applyRestartPolicy(assignments, cnf, lbd, ogCnfSize, decisionLevel)
     return True, assignments.history
 
+"""
+parses argv for filename, reads it in with cnf_utils and runs CDCL
+outputs the result, dratProof if UNSAT and some statistics
+"""
 if __name__ == "__main__":
 
     if len(sys.argv) == 2:

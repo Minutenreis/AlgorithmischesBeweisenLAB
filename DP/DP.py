@@ -9,7 +9,9 @@ statAddedClauses = 0
 statPureLiteralRemovedClauses = 0
 statSubsumedClauses = 0
 
-# remove all clauses that are strictly larger than another clause
+"""
+remove all clauses that are strictly larger than another clause
+"""
 def subsumption(cnf: list[list[int]]) -> list[list[int]]:
     global statSubsumedClauses
     
@@ -25,7 +27,9 @@ def subsumption(cnf: list[list[int]]) -> list[list[int]]:
         i += 1
     return cnf
 
-# remove tautologies and duplicates
+"""
+remove tautologies and duplicates
+"""
 def remove_tautologies_and_duplicates(cnf: list[list[int]]) -> list[list[int]]:
     # remove tautologies
     cnf = [c for c in cnf if not any([l1 == -l2 for l1 in c for l2 in c])]
@@ -33,8 +37,9 @@ def remove_tautologies_and_duplicates(cnf: list[list[int]]) -> list[list[int]]:
     [c for c in cnf].sort()
     cnf = [cnf[i] for i in range(len(cnf)) if i == len(cnf)-1 or cnf[i] != cnf[i+1]] # last one is always kept
     return cnf
-
+"""
 # remove variable if it exists in only 1 polarity
+"""
 def pure_literal_elimination(cnf: list[list[int]]) -> list[list[int]]:
     global statPureLiteralRemovedClauses
     
@@ -47,7 +52,9 @@ def pure_literal_elimination(cnf: list[list[int]]) -> list[list[int]]:
     statPureLiteralRemovedClauses += statClausesBefore - len(cnf)
     return cnf
 
-# repeat unit propagation until no more unit clauses are found
+"""
+repeat unit propagation until no more unit clauses are found
+"""
 def complete_unit_propagation(cnf: list[list[int]]) -> list[list[int]]:
     i = 0
     while i < len(cnf):
@@ -59,7 +66,9 @@ def complete_unit_propagation(cnf: list[list[int]]) -> list[list[int]]:
         i += 1
     return cnf
 
-# unit_propagation: set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false for all clauses
+"""
+unit_propagation: set variable (eg. 3 or -3) to true -> -3 = true implies 3 to be false for all clauses
+"""
 def unit_propagation(cnf: list[list[int]], variable: int) -> list[list[int]]:
     global statUP
     statUP += 1
@@ -70,13 +79,20 @@ def unit_propagation(cnf: list[list[int]], variable: int) -> list[list[int]]:
     cnf = [[l for l in c if l != -variable] for c in cnf]
     return cnf
 
-# merge clauses without literal and its negation
+"""
+merge clauses without literal and its negation
+"""
 def addResolvent(clause1: list[int], clause2: list[int], literal: int) -> list[list[int]]:
     global statAddedClauses
     statAddedClauses += 1
     iterator = heapq.merge(clause1, clause2, key=abs)
     return [l for l in iterator if l != literal and l != -literal]
 
+"""
+Davis-Putnam (DP) algorithm
+@input cnf: list of clauses
+@output: is the formula satisfiable
+"""
 def DP(cnf: list[list[int]]) -> bool:
     while True:
         lenCnf = -1
@@ -105,6 +121,10 @@ def DP(cnf: list[list[int]]) -> bool:
                         new_clauses.append(addResolvent(cnf[i], cnf[j], literal))
         cnf = new_clauses + [c for c in cnf if literal not in c and -literal not in c]
 
+"""
+parses argv for filename, reads it in with cnf_utils and runs CDCL
+outputs the result, dratProof if UNSAT and some statistics
+"""
 if len(sys.argv) != 2:
     print("Usage: python DP.py filename")
     print("filename: path to the cnf file")
