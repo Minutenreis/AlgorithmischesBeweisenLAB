@@ -23,6 +23,7 @@ statDecision = 0
 statConflicts = 0
 statLearnedClauses = 0
 statDeletedClauses = 0
+statClauseMinimalization = 0
 statMaxLengthLearnedClause = 0
 statRestarts = 0
 b = 2
@@ -315,11 +316,13 @@ def learnClause(cnf: CNF, assignments: Assignments, lbd: list[float], c_learned:
     # clause minimazation
     global optClauseMinimization
     if optClauseMinimization:
+        global statClauseMinimalization
         # len(cnf) - 1 is the learned clause
         for i in range(len(cnf) - 2, ogCnfSize-1, -1):
             clause = cnf[i]
             # clause is redundant, if c_learned is a subset of clause
             if all([literal in clause for literal in c_learned]):
+                statClauseMinimalization += 1
                 deleteClause(cnf, assignments, lbd, i)
     # set literal
     assignments.setLiteral(c_learned[0], decisionLevel, c_learned)
@@ -383,6 +386,7 @@ if __name__ == "__main__":
     ("conflicts", str(statConflicts)),
     ("learned clauses", str(statLearnedClauses)),
     ("deleted clauses", str(statDeletedClauses)),
+    ("clause minimizations", str(statClauseMinimalization)),
     ("max learned clause length", str(statMaxLengthLearnedClause)),
     ("num Restarts", str(statRestarts)),
     ("peak memory", str(statPeakMemoryMB)+" MB (assumes Ubuntu)"),
