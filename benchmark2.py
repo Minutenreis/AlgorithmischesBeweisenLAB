@@ -44,7 +44,7 @@ def getPath(solver):
     else:
         return solver
     
-statisticsToCompare = ['unit propagations', 'decisions']
+statisticsToCompare = ['unit propagations', 'decisions', 'time']
 
 solver1 = sys.argv[1]
 solver1Path = getPath(solver1)

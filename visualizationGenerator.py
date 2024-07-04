@@ -1,11 +1,11 @@
 import subprocess
 
-nValuesRandomCDCL = [16, 32, 64, 128]
-nValuesRandomDPLL = [16, 32, 64, 80, 96]
+nValuesRandomCDCL = [4,8,16, 32, 64, 128, 160]
+nValuesRandomDPLL = [4,8,16, 32, 64, 80, 96]
 nValuesPHPCDCL = [1,2,3,4,5,6,7]
 nValuesPHPDPLL = [1,2,3,4,5,6,7,8]
 nValuesPebblingCDCL = [2,4,8,9,10,15,20,25,30,35,40,45,50]
-nValuesPebblingDPLL = [2,3,4,5,6]
+nValuesPebblingDPLL = [2,3,4,5]
 
 print("CDCL Random")
 for n in nValuesRandomCDCL:

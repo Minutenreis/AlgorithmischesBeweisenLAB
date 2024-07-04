@@ -52,8 +52,7 @@ os.makedirs('temp', exist_ok=True)
 
 if solver.upper() == "DPLL":
     solverOutputDPLL = 'temp/solverOutputDPLL.txt'
-    # DPLLBitPatterns = ['0','1']
-    DPLLBitPatterns = ["0"]
+    DPLLBitPatterns = ['0','1']
     DPLLFileNames = [f'temp/solverOutputDPLL{bitPattern}.txt' for bitPattern in DPLLBitPatterns]
     DPLLFiles = [open(name, 'w') for name in DPLLFileNames]
 elif solver.upper() == "CDCL":
@@ -67,7 +66,7 @@ elif solver.upper() == "CDCL":
     CDCLFileNames = [f'temp/solverOutputCDCL{bitPattern}.txt' for bitPattern in CDCLBitPatterns]
     CDCLBitPatternFiles = [open(name, 'w') for name in CDCLFileNames]
     
-if solver.upper() == "DPLL" and os.path.exists(f'temp/benchmark_{solver}_{generator}_{n}_0.txt') or\
+if solver.upper() == "DPLL" and os.path.exists(f'temp/benchmark_{solver}-{DPLLBitPatterns[0]}_{generator}_{n}.txt') or\
     solver.upper() == "CDCL" and os.path.exists(f'temp/benchmark_{solver}-{CDCLBitPatterns[0]}_{generator}_{n}.txt'):
     print("Benchmark already exists")
     sys.exit(0)
