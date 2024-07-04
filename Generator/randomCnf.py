@@ -38,7 +38,7 @@ if len(sys.argv) < 2 and len(sys.argv) > 5:
     sys.exit(1)
 
 n = int(sys.argv[1])
-c = int(sys.argv[2]) if len(sys.argv) > 2 else round(3.8 * n)
+c = int(sys.argv[2]) if len(sys.argv) > 2 else round(4 * n)
 k = int(sys.argv[3]) if len(sys.argv) > 3 else 3
 filenameInput = sys.argv[4] if len(sys.argv) == 5 else "randomCnf.cnf"
 filename = filenameInput if filenameInput.endswith(".cnf") else filenameInput + ".cnf"

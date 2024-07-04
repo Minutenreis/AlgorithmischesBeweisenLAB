@@ -129,12 +129,15 @@ def DPLL(cnf: list[list[int]], v: set[int] = set()) -> tuple[bool,set[int]]:
 parses argv for filename, reads it in with cnf_utils and runs CDCL
 outputs the result and some statistics
 """
-if len(sys.argv) != 2:
-    print("Usage: python DPLL.py filename")
+if len(sys.argv) != 2 and len(sys.argv) != 3:
+    print("Usage: python DPLL.py filename [PureLiteralBool]")
     print("filename: path to the cnf file")
+    print("PureLiteralBool: 0 or 1, if 1 pure literal elimination is enabled")
     sys.exit(1)
 
 filename = sys.argv[1]
+if len(sys.argv) == 3:
+    flagPureLiteralElimination = bool(int(sys.argv[2]))
 
 cnf = cnf_utils.read_cnf(filename)
 sat, v = DPLL(cnf)

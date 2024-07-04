@@ -95,6 +95,16 @@ CDCL also has unittests which can be run with `python3.12 CDCL/test_cdcl.py`
 Note regarding excessive comments: 
 All functions are commented with """ """, the others are mostly written so I can understand the program myself.
 
+## Benchmarking
+
+The benchmark results under [BenchmarkResults.md](BenchmarkResults.md) were obtained in the following way:
+
+first run `python3.12 visualizationGenerator.py` to generate the testdata in [temp](/temp/)\
+then run `python3.12 visualize.py` to generate the plots in [Plots](/Plots/)
+
+[benchmark.py](benchmark.py) is a dependency only intended to be used by [visualizationGenerator.py](visualizationGenerator.py), but its possible to call it yourself with `python3.12 benchmark.py solver n generator`, where solver is cdcl or dpll and generator is random, php or pebbling.
+It generates a file with the averaged results of 100 runs with the given solver on random or 1 run on php or pebbling.
+
 ## Other
 
 There are some convenience methods included.
@@ -121,7 +131,7 @@ tries: number of CNFs to generate and test
 
 or run my comparitive benchmark with
 ```
-python3.12 benchmark.py solver1 solver2 n tries [generator]
+python3.12 benchmark2.py solver1 solver2 n tries [generator]
 solver1: path to the solver1 (python3.12) or one of the following: CDCL, DPLL, DP
 solver2: path to the solver2 (python3.12) or one of the following: CDCL, DPLL, DP
 n: number of literals if randomGenerator is used, number of source nodes if Pebbling is used, number of holes in the PHP if PHP is used

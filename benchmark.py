@@ -2,6 +2,7 @@ import sys
 import subprocess
 import time
 import os
+import re
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
@@ -25,134 +26,102 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
-if len(sys.argv) != 5 and len(sys.argv) != 6:
-    print("Usage: python benchmark.py solver1 solver2 n tries [generator]")
-    print("solver1: path to the solver1 (python3.12) or one of the following: CDCL, DPLL, DP")
-    print("solver2: path to the solver2 (python3.12) or one of the following: CDCL, DPLL, DP")
+if len(sys.argv) != 4:
+    print("Usage: python3.12 benchmark.py solver n generator")
+    print("solver: cdcl or dpll")
     print("n: number of literals if randomGenerator is used, number of source nodes if Pebbling is used, number of holes in the PHP if PHP is used")
-    print("tries: number of CNFs to generate and test")
-    print("[generator]: path to the generator (python3.12) or one of the following: PHP, Pebbling, Random  (optional)")
+    print("generator: path to the generator (python3.12) or one of the following: PHP, Pebbling, Random  (optional)")
     sys.exit(1)
 
-def getPath(solver):
-    if (solver.upper() == "CDCL"):
-        return "CDCL/CDCL.py"
-    elif (solver.upper() == "DPLL"):
-        return "DPLL/DPLL.py"
-    elif (solver.upper() == "DP"):
-        return "DP/DP.py"
-    else:
-        return solver
-    
-statisticsToCompare = ['unit propagations', 'decisions']
+solver = sys.argv[1]
+n = sys.argv[2]
 
-solver1 = sys.argv[1]
-solver1Path = getPath(solver1,0)
-    
-solver2 = sys.argv[2]
-solver2Path = getPath(solver2,1)
-
-n = sys.argv[3]
-tries = int(sys.argv[4])
-
-generator = sys.argv[5] if len(sys.argv) == 6 else "random"
+generator = sys.argv[3]
+generatorPath = generator
 if (generator.upper() == "PHP"):
-    generator = "Generator/PHP.py"
+    generatorPath = "Generator/PHP.py"
     cnfFilename = "PHP.cnf"
 elif (generator.upper() == "PEBBLING"):
-    generator = "Generator/Pebbling.py"
+    generatorPath = "Generator/Pebbling.py"
     cnfFilename = "Pebbling.cnf"
 elif (generator.upper() == "RANDOM"):
-    generator = "Generator/randomCnf.py"
+    generatorPath = "Generator/randomCnf.py"
     cnfFilename = "randomCnf.cnf"
-
-statTimeSolver1 = 0
-statTimeSolver2 = 0
-statTimeGen = 0
-
+    
 os.makedirs('temp', exist_ok=True)
 
-solver1Output = 'temp/solver1Output.txt'
-file1 = open(solver1Output, 'w')
-solver2Output = 'temp/solver2Output.txt'
-file2 = open(solver2Output, 'w')
+if solver.upper() == "DPLL":
+    solverOutputDPLL = 'temp/solverOutputDPLL.txt'
+    # DPLLBitPatterns = ['0','1']
+    DPLLBitPatterns = ["0"]
+    DPLLFileNames = [f'temp/solverOutputDPLL{bitPattern}.txt' for bitPattern in DPLLBitPatterns]
+    DPLLFiles = [open(name, 'w') for name in DPLLFileNames]
+elif solver.upper() == "CDCL":
+    CDCLBitPatterns = ['11111', '11110', '11100', '11000', '10000', '00000']
+    if generator.upper() == "PEBBLING" and int(n)>8:
+        CDCLBitPatterns = CDCLBitPatterns[:-2]
+        if int(n)>16:
+            CDCLBitPatterns = CDCLBitPatterns[:-1]
+    elif generator.upper() == "RANDOM" and int(n)>100:
+        CDCLBitPatterns = CDCLBitPatterns[:-2]
+    CDCLFileNames = [f'temp/solverOutputCDCL{bitPattern}.txt' for bitPattern in CDCLBitPatterns]
+    CDCLBitPatternFiles = [open(name, 'w') for name in CDCLFileNames]
+    
+if solver.upper() == "DPLL" and os.path.exists(f'temp/benchmark_{solver}_{generator}_{n}_0.txt') or\
+    solver.upper() == "CDCL" and os.path.exists(f'temp/benchmark_{solver}-{CDCLBitPatterns[0]}_{generator}_{n}.txt'):
+    print("Benchmark already exists")
+    sys.exit(0)
 
+tries = 100 if generator.upper() == "RANDOM" else 1
 printProgressBar(0,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 for i in range(tries):
-    timeGenStart = time.perf_counter()
-    subprocess.call(["python3.12", generator, n])
-    timeGenEnd = time.perf_counter()
+    # Generate CNF
+    subprocess.call(["python3.12", generatorPath, n])
     
-    timeSolver1Start = time.perf_counter()
-    satSolver1 = subprocess.call(["python3.12",solver1Path, cnfFilename],stdout=file1)
-    timeSolver1End = time.perf_counter()
-    
-    timeSolver2Start = time.perf_counter()
-    satSolver2 = subprocess.call(["python3.12",solver2Path, cnfFilename],stdout=file2)
-    timeSolver2End = time.perf_counter()
-    
-    if (satSolver1 != satSolver2):
-        print("Different results")
-        sys.exit(1)
-    
-    statTimeSolver1 += timeSolver1End - timeSolver1Start
-    statTimeSolver2 += timeSolver2End - timeSolver2Start
-    statTimeGen += timeGenEnd - timeGenStart
-    
+    if solver.upper() == "CDCL":
+        for j, bitPattern in enumerate(CDCLBitPatterns):
+            subprocess.call(["python3.12", "CDCL/CDCL.py", cnfFilename, bitPattern], stdout=CDCLBitPatternFiles[j])
+    elif solver.upper() == "DPLL":
+        for j, bitPattern in enumerate(DPLLBitPatterns):
+            subprocess.call(["python3.12", "DPLL/DPLL.py", cnfFilename, bitPattern], stdout=DPLLFiles[j])
     
     printProgressBar(i+1,tries, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
-file1.close()
-file2.close()
+if solver.upper() == "DPLL":
+    for file in DPLLFiles:
+        file.close()
+elif solver.upper() == "CDCL":
+    for file in CDCLBitPatternFiles:
+        file.close()
 
-file1 = open(solver1Output, 'r')
-file2 = open(solver2Output, 'r')
+if solver.upper() == "DPLL":
+    outputs = DPLLFileNames
+elif solver.upper() == "CDCL":
+    outputs = CDCLFileNames
 
-statsSolver1Sum = {}
-statsSolver1Num = {}
-statsSolver2Sum = {}
-statsSolver2Num = {}
+for i, solverOutput in enumerate(outputs):
+    file = open(solverOutput, 'r')
 
-def getStat(file, statSum, statNum):
-    for line in file:
-        for stat in statisticsToCompare:
-            if line.startswith(f"c {stat}:"):
+    statsSolverSum = {}
+    statsSolverNum = {}
+
+    regex = re.compile(r"(c [a-zA-Z ]+:)")
+
+    def getStat(file, statSum, statNum):
+        for line in file:
+            if regex.match(line):
+                stat = " ".join(line.split(":")[0].split()[1:])
                 statSum[stat] = statSum.get(stat,0) + float(line.split(":")[1].strip().split()[0])
                 statNum[stat] = statNum.get(stat,0) + 1
-                break
 
-getStat(file1, statsSolver1Sum, statsSolver1Num)
-getStat(file2, statsSolver2Sum, statsSolver2Num)
+    getStat(file, statsSolverSum, statsSolverNum)
 
-file1.close()
-file2.close()
-
-print("Time spent generating CNFs: ", statTimeGen, "s")
-print()
-print(f"Time spent in {solver1}: ", statTimeSolver1, "s")
-print(f"Time spent in {solver2}: ", statTimeSolver2, "s")
-if statTimeSolver1 < statTimeSolver2:
-    print(f"{solver1} was {round((1 - statTimeSolver1 / statTimeSolver2) * 100)}% faster than {solver2}")
-else:
-    print(f"{solver2} was {round((1 - statTimeSolver2 / statTimeSolver1) * 100)}% faster than {solver1}")
-print()
-
-for stat in statisticsToCompare:
-    # one does not implement stat
-    if statsSolver1Num.get(stat,0) == 0 or statsSolver2Num.get(stat,0) == 0:
-        continue
-    
-    if statsSolver1Num[stat] != statsSolver2Num[stat]:
-        print(f"Number of {stat} differ")
-        break
-    
-    statSolver1 = statsSolver1Sum[stat] / statsSolver1Num[stat]
-    statSolver2 = statsSolver2Sum[stat] / statsSolver2Num[stat]
-    
-    print(f"Average {stat} in {solver1}: ", statSolver1)
-    print(f"Average {stat} in {solver2}: ", statSolver2)
-    if statSolver1 < statSolver2:
-        print(f"{solver1} had {round((1 - statSolver1 / statSolver2) * 100)}% less {stat} than {solver2}")
-    else:
-        print(f"{solver2} had {round((1 - statSolver2 / statSolver1) * 100)}% less {stat} than {solver1}")
-    print()
+    if solver.upper() == "DPLL":
+        outputFile = f'temp/benchmark_{solver}-{DPLLBitPatterns[i]}_{generator}_{n}.txt'
+    elif solver.upper() == "CDCL":
+        outputFile = f'temp/benchmark_{solver}-{CDCLBitPatterns[i]}_{generator}_{n}.txt'
+    with open(outputFile, 'w') as f:
+        for stat in ["unit propagations", "decisions", "time"]:
+            statSolver1 = statsSolverSum[stat] / statsSolverNum[stat]
+            print(f"Average {stat} in {solver}: ", statSolver1, file=f)
+    file.close()

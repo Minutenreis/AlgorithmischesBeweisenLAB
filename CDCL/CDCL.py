@@ -10,7 +10,7 @@ optRestarts = True # if True, restarts are enabled, otherwise disabled
 optVSIDS = True # if True, VSIDS are taken into account, otherwise not
 optClauseLearning = True # if True, clause learning includes 1UIP, otherwise only decision literals
 optClauseDeletion = True # if True, learned clauses are deleted, otherwise not
-optClauseMinimization = True # if True, learned clauses are minimized, otherwise not
+optClauseMinimization = False # if True, learned clauses are minimized, otherwise not
 
 type Literal = int
 type Clause = list[Literal]
@@ -429,16 +429,27 @@ outputs the result, dratProof if UNSAT and some statistics
 """
 if __name__ == "__main__":
 
-    if len(sys.argv) == 2:
+    if len(sys.argv) >= 2:
         filename = sys.argv[1]
     elif len(sys.argv) == 1:
         from pathlib import Path
         filename = str(Path(__file__).parent.parent.joinpath("randomCnf.cnf"))
-    else:
-        print("Usage: python CDCL.py filename")
+    elif len(sys.argv) > 3:
+        print("Usage: python CDCL.py filename [options]")
         print("filename: path to the cnf file")
+        print("options: 5 bit pattern for opts (default: 11111)")
         sys.exit(1)
     
+    if len(sys.argv) == 3:
+        opts = sys.argv[2]
+        if len(opts) != 5:
+            print("Options must be a 5 bit pattern")
+            sys.exit(1)
+        optRestarts = opts[0] == "1"
+        optVSIDS = opts[1] == "1"
+        optClauseLearning = opts[2] == "1"
+        optClauseDeletion = opts[3] == "1"
+        optClauseMinimization = opts[4] == "1"
 
 
     cnf = cnf_utils.read_cnf(filename)
